@@ -46,14 +46,14 @@ case $1 in
   "dump")
     echo "============== users Table ================"
     sqlite3 -batch -line var/insta485.sqlite3 'SELECT * FROM users'
+    echo "============== posts Table ================"
+    sqlite3 -batch -line var/insta485.sqlite3 'SELECT * FROM posts'
     echo "============== comments Table ================"
     sqlite3 -batch -line var/insta485.sqlite3 'SELECT * FROM comments'
     echo "============== following Table ================"
     sqlite3 -batch -line var/insta485.sqlite3 'SELECT * FROM following'
     echo "============== likes Table ================"
     sqlite3 -batch -line var/insta485.sqlite3 'SELECT * FROM likes'
-    echo "============== posts Table ================"
-    sqlite3 -batch -line var/insta485.sqlite3 'SELECT * FROM posts'
     ;;
   *)
     usage
