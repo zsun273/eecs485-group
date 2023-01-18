@@ -23,7 +23,7 @@ CREATE TABLE posts (
 CREATE TABLE comments (
     commentid INTEGER PRIMARY KEY AUTOINCREMENT,
     owner     VARCHAR(20) NOT NULL,
-    postid    INT,
+    postid    INTEGER,
     text      VARCHAR(1024) NOT NULL,
     created   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(owner) REFERENCES users(username)
@@ -36,7 +36,7 @@ CREATE TABLE comments (
 CREATE TABLE likes (
     likeid    INTEGER PRIMARY KEY AUTOINCREMENT,
     owner     VARCHAR(20) NOT NULL,
-    postid    INT,
+    postid    INTEGER,
     created   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(owner) REFERENCES users(username)
                    ON DELETE CASCADE,
