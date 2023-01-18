@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>  
+        <link rel="stylesheet" href="/css/style.css">
+        <title>insta485</title>
+    </head>
+    <body>
+        <div class="headline">
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="/images/ins.png"></a>
+            <div class="right">  
+                <a href="/explore/">explore</a>
+                |
+                <a href="/users/{{logname}}/">{{logname}}</a>
+            </div>
+        </div>
+        <div class="user">  
+            <div class="username">{{username}}</div>
+            {% if logname != username %}
+                <div class="userinfo">
+                    {% if logname_follows_username %}
+                        following
+                    {% else %}
+                        not following
+                    {% endif %}
+                </div>
+            {% endif %}
+            <div class="userinfo">
+                {% if total_posts == 1 %}
+                    {{total_posts}} post 
+                {% else %}
+                    {{total_posts}} posts 
+                {% endif %}
+                <a href="/users/{{username}}/followers/">
+                    {% if followers == 1 %}
+                        {{followers}} follower 
+                    {% else %}
+                        {{followers}} followers 
+                    {% endif %}
+                </a>
+                <a href="/users/{{username}}/following/">{{following}} following</a>
+            </div>
+            <div class="userinfo">{{fullname}}</div>
+            {% for post in posts %}
+                <a href="/posts/{{post.postid}}/" class="userphoto"><img alt="Image Not Loaded" src="{{post.img_url}}"></a>
+            {% endfor %}
+        </div>
+    </body>
+</html>
