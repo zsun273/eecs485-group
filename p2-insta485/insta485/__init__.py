@@ -3,7 +3,8 @@ import flask
 
 
 # app is a single object used by all the code modules in this package
-app = flask.Flask(__name__)  # pylint: disable=invalid-name
+# pylint: disable=invalid-name
+app = flask.Flask(__name__, static_folder='static')
 
 
 # Read settings from config module (insta485/config.py)

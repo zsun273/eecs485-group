@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>  
-        <link rel="stylesheet" href="/css/style.css">
+        <link rel="stylesheet" href="/static/css/style.css">
         <title>insta485</title>
     </head>
     <body>
         <div class="headline">
-            <a href="/" class="logo"><img alt="Image Not Loaded" src="/images/ins.png"></a>
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
             <div class="right">  
                 <a href="/explore/">explore</a>
                 |
@@ -16,11 +16,11 @@
         {% for post in posts %}
             <div class="post">  
                 <div class="posthead">  
-                    <a href="/users/{{post.owner}}/" class="profile"><img alt="Image Not Loaded" src="{{post.owner_img_url}}"></a>
+                    <a href="/users/{{post.owner}}/" class="profile"><img alt="Image Not Loaded" src="/static/images/{{post.owner_img_url}}"></a>
                     <a href="/users/{{post.owner}}/">{{post.owner}}</a>
-                    <a href="/posts/{{post.postid}}/" class="time">{{post.timestamp}}</a>
+                    <a href="/posts/{{post.postid}}/" class="time">{{post.created}}</a>
                 </div>
-                <div class="photo"><img alt="Image Not Loaded" src="{{post.img_url}}"></div>
+                <div class="photo"><img alt="Image Not Loaded" src="/static/images/{{post.filename}}"></div>
                 <div class="comment">
                     {% if post.likes == 1 %}
                         {{post.likes}} like
