@@ -1,7 +1,6 @@
 """
 Insta485 index (main) view.
 
-
 URLs include:
 /
 """
@@ -9,16 +8,11 @@ import flask
 import insta485
 
 
-
-
 @insta485.app.route('/')
 def show_index():
     """Display / route."""
-
-
     # Connect to database
     connection = insta485.model.get_db()
-
 
     # Query database
     logname = "awdeorio"
@@ -26,10 +20,9 @@ def show_index():
         "SELECT username, fullname "
         "FROM users "
         "WHERE username != ?",
-        (logname, )
+        (logname,)
     )
     users = cur.fetchall()
-
 
     # Add database info to context
     context = {"users": users}
