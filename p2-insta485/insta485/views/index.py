@@ -9,20 +9,24 @@ import arrow
 import insta485
 
 
-@insta485.app.route('/')
+@insta485.app.route('/', methods=['GET', 'POST'])
 def show_index():
     """Display / route."""
+    if 'username' not in flask.session:
+        return flask.redirect(flask.url_for('login'))
+
     # Connect to database
     connection = insta485.model.get_db()
 
     # Query database
-    logname = "awdeorio"
+    logname = flask.session['username']
     cur = connection.execute(
         "SELECT DISTINCT posts.postid, posts.owner, "
         "posts.filename, posts.created "
         "FROM posts, following "
         "WHERE posts.owner == ? "
-        "OR (following.username1 == ? AND following.username2 == posts.owner)"
+        "OR (following.username1 == ? "
+        "AND following.username2 == posts.owner)"
         "ORDER BY posts.postid DESC",
         (logname, logname,)
     )
@@ -49,6 +53,14 @@ def show_index():
         ).fetchall()
         post['likes'] = likes[0]['number']
 
+        people_liked = connection.execute(
+            "SELECT likes.owner "
+            "FROM likes "
+            "WHERE likes.postid == ?",
+            (postid,)
+        ).fetchall()
+        post['people_liked'] = [people['owner'] for people in people_liked]
+
         users = connection.execute(
             "SELECT  users.filename "
             "FROM users "
@@ -64,3 +76,15 @@ def show_index():
     print(flask.session)
 
     return flask.render_template("index.html", **context)
+
+
+@insta485.app.route('/likes', methods=['GET', 'POST'])
+def handle_likes():
+    """Handle likes request."""
+    return "likes page."
+
+
+@insta485.app.route('/comments', methods=['GET', 'POST'])
+def handle_comments():
+    """Handle comments request."""
+    return "comments page."

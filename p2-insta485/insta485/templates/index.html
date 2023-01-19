@@ -6,7 +6,7 @@
     </head>
     <body>
         <div class="headline">
-            <a href="/" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
+            <a href="{{ url_for('show_index') }}" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
             <div class="right">  
                 <a href="/explore/">explore</a>
                 |
@@ -31,6 +31,27 @@
                 {% for comment in post.comments %}
                     <div class="comment"><a href="/users/{{comment.owner}}/">{{comment.owner}}</a> {{comment.text}}</div>
                 {% endfor %}
+
+                {% if logname in post.people_liked %}
+                    <form action="{{url_for('handle_likes')}}?target={{url_for('show_index')}}" method="post" enctype="multipart/form-data">
+                      <input type="hidden" name="operation" value="unlike"/>
+                      <input type="hidden" name="postid" value="{{post.postid}}"/>
+                      <input type="submit" name="unlike" value="unlike"/>
+                    </form>
+                {% else %}
+                    <form action="{{url_for('handle_likes')}}?target={{url_for('show_index')}}>" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="operation" value="like"/>
+                        <input type="hidden" name="postid" value="{{post.postid}}"/>
+                        <input type="submit" name="like" value="like"/>
+                    </form>
+                {% endif %}
+
+                <form action="{{url_for('handle_comments')}}?target={{url_for('show_index')}}" method="post" enctype="multipart/form-data">
+                  <input type="hidden" name="operation" value="create"/>
+                  <input type="hidden" name="postid" value="{{post.postid}}"/>
+                  <input type="text" name="text" required/>
+                  <input type="submit" name="comment" value="comment"/>
+                </form>
             </div>
         {% endfor %}
     </body>
