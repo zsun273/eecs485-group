@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>  
-        <link rel="stylesheet" href="/css/style.css">
+        <link rel="stylesheet" href="{{url_for('static_uploads', filename='css/style.css')}}">
         <title>insta485</title>
     </head>
     <body>
         <div class="headline">
-            <a href="/" class="logo"><img alt="Image Not Loaded" src="/images/ins.png"></a>
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="{{url_for('static_uploads', filename='images/ins.png')}}"></a>
             <div class="right">  
                 <a href="/explore/">explore</a>
                 |
@@ -17,14 +17,24 @@
         {% for follower in following %}
             <div class="post">  
                 <div class="posthead">  
-                    <div class="profile"><img alt="Image Not Loaded" src="{{follower.user_img_url}}"></div>
+                    <div class="profile"><img alt="Image Not Loaded" src="{{url_for('uploads', filename=follower.filename)}}"></div>
                     <a href="/users/{{follower.username}}/">{{follower.username}}</a>
                     {% if logname != follower.username %}
                         <div class="time">
-                            {% if follower.logname_follows_username %}
+                            {% if follower.username in people_following %}
                                 following
+                                <form action="/following/?target={{url_for('followers', username=current_username)}}" method="post" enctype="multipart/form-data">
+                                  <input type="submit" name="unfollow" value="unfollow"/>
+                                  <input type="hidden" name="username" value="{{follower.username}}"/>
+                                  <input type="hidden" name="operation" value="unfollow"/>
+                                </form>
                             {% else %}
                                 not following
+                                <form action="/following/?target={{url_for('followers', username=current_username)}}" method="post" enctype="multipart/form-data">
+                                  <input type="submit" name="follow" value="follow"/>
+                                  <input type="hidden" name="username" value="{{follower.username}}"/>
+                                  <input type="hidden" name="operation" value="follow"/>
+                                </form>
                             {% endif %}
                         </div>
                     {% endif %}
