@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="stylesheet" href="/static/css/style.css">
+        <title>insta485</title>
+    </head>
+    <body>
+        <div class="headline">
+            <a href="{{ url_for('show_index') }}" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
+            <div class="right">
+                <span>login</span>
+            </div>
+        </div>
+        <form action="/accounts/?target=/" method="post" enctype="multipart/form-data">
+            <label for="username">Username : </label><br>
+              <input type="text" name="username" required/><br>
+            <label for="password">Password: </label><br>
+              <input type="password" name="password" required/><br><br>
+              <input type="submit" value="login"/>
+              <input type="hidden" name="operation" value="login"/>
+        </form>
+        <h2>Don't have an account? <a href="/accounts/create/">Sign Up</a></h2>
+    </body>
+</html>
