@@ -7,16 +7,17 @@ URLs include:
 import flask
 import insta485
 
+
 @insta485.app.route('/explore/', methods=['GET'])
 def show_explore():
     """Show explore page."""
     # Redirecting
-    logname = "awdeorio"
-    #if 'username' in flask.session:
-    #    logname = flask.session['username']
-    #else:
-    #    return flask.redirect(flask.url_for('login'))
-    
+
+    if 'username' in flask.session:
+        logname = flask.session['username']
+    else:
+        return flask.redirect(flask.url_for('login'))
+
     # Connect to database
     connection = insta485.model.get_db()
 

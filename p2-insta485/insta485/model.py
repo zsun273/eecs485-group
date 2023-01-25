@@ -35,7 +35,7 @@ def query_db(query, args=(), one=False):
     """Make SQL queries."""
     cur = get_db().execute(query, args)
     res = cur.fetchall()
-    close_db()
+    close_db(None)
     return (res[0] if res else None) if one else res
 
 
@@ -43,7 +43,7 @@ def update_db(query, args=()):
     """Update database records."""
     try:
         get_db().execute(query, args)
-        close_db()
+        close_db(None)
     except sqlite3.Error as err:
         print("UPDATE ERROR: ", err)
 
