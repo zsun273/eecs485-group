@@ -1,25 +1,31 @@
-
 <!DOCTYPE html>
 <html lang="en">
     <head>  
-        <link rel="stylesheet" href="/css/style.css">
+        <link rel="stylesheet" href="{{url_for('static_uploads', filename='css/style.css')}}">
         <title>insta485</title>
     </head>
     <body>
         <div class="headline">
-            <a href="/" class="logo"><img alt="Image Not Loaded" src="/images/ins.png"></a>
+            <a href="{{url_for('show_index')}}" class="logo"><img alt="Image Not Loaded" src="{{url_for('static_uploads', filename='images/ins.png')}}"></a>
             <div class="right">  
-                <a href="/explore/">explore</a>
+                <a href="{{url_for('show_explore')}}">explore</a>
                 |
-                <a href="/users/{{logname}}/">{{logname}}</a>
+                <a href="{{url_for('show_user', username=logname)}}">{{logname}}</a>
             </div>
         </div>
         <div class="username">Discover People</div>
-        {% for follower in not_following %}
+        {% for user in users %}
             <div class="post">  
                 <div class="posthead">  
-                    <div class="profile"><img alt="Image Not Loaded" src="{{follower.user_img_url}}"></div>
-                    <a href="/users/{{follower.username}}/">{{follower.username}}</a>
+                    <div class="profile"><img alt="Image Not Loaded" src="{{url_for('uploads', filename = user.filename)}}"></div>
+                    <a href="{{url_for('show_user', username = user.username)}}">{{user.username}}</a>
+                    <div class="time">
+                        <form action="/following/?target={{url_for('show_explore')}}" method="post" enctype="multipart/form-data">
+                            <input type="submit" name="follow" value="follow"/>
+                            <input type="hidden" name="username" value="{{user.username}}"/>
+                            <input type="hidden" name="operation" value="follow"/>
+                        </form>
+                    </div>
                 </div>
             </div>
         {% endfor %}
