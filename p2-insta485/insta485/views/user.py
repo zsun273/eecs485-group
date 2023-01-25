@@ -93,16 +93,16 @@ def followers(username):
         (username,)
     ).fetchall()
 
-    people_followers = connection.execute(
-        "SELECT f.username1 AS 'followers' "
+    people_following = connection.execute(
+        "SELECT f.username2 AS 'following' "
         "FROM following f "
-        "WHERE f.username2 == ? ",
+        "WHERE f.username1 == ? ",
         (logname,)
     ).fetchall()
-    people_followers = [people['followers'] for people in people_followers]
+    people_following = [people['following'] for people in people_following]
 
     context = {"logname": logname, "followers": follower,
-               "people_followers": people_followers,
+               "people_following": people_following,
                "current_username": username}
 
     return flask.render_template("followers.html", **context)

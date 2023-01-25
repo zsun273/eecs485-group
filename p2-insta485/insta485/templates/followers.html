@@ -21,7 +21,7 @@
                     <a href="/users/{{follower.username}}/">{{follower.username}}</a>
                     {% if logname != follower.username %}
                         <div class="time">
-                            {% if follower.username in people_followers %}
+                            {% if follower.username in people_following %}
                                 following
                                 <form action="/following/?target={{url_for('followers', username=current_username)}}" method="post" enctype="multipart/form-data">
                                   <input type="submit" name="unfollow" value="unfollow"/>

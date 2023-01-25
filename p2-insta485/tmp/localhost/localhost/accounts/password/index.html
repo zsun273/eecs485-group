@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <link rel="stylesheet" href="{{url_for('static_uploads', filename='css/style.css')}}">
+        <link rel="stylesheet" href="/static/css/style.css">
         <title>insta485</title>
     </head>
     <body>
         <div class="headline">
-            <a href="{{ url_for('show_index') }}" class="logo"><img alt="Image Not Loaded" src="{{url_for('static_uploads', filename='images/ins.png')}}"></a>
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
             <div class="right">
                 <a href="/explore/">explore</a>
                 |
-                <a href="/users/{{logname}}/">{{logname}}</a>
+                <a href="/users/awdeorio/">awdeorio</a>
             </div>
         </div>
         <form action="/accounts/?target=/accounts/password/" method="post" enctype="multipart/form-data">

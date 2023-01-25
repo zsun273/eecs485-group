@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>  
+        <link rel="stylesheet" href="/static/css/style.css">
+        <title>insta485</title>
+    </head>
+    <body>
+        <div class="headline">
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
+            <div class="right">  
+                <a href="/explore/">explore</a>
+                |
+                <a href="/users/awdeorio/">awdeorio</a>
+            </div>
+        </div>
+        <div class="post">  
+            <div class="posthead">  
+                <a href="/users/jag/" class="profile"><img alt="Image Not Loaded" src="/uploads/73ab33bd357c3fd42292487b825880958c595655.jpg"></a>
+                <a href="/users/jag/">jag</a>
+                <a href="/posts/4/" class="time">just now</a>
+            </div>
+            <div class="photo"><img alt="Image Not Loaded" src="/uploads/2ec7cf8ae158b3b1f40065abfb33e81143707842.jpg"></div>
+            <div class="comment">
+                
+                    0 likes
+                
+            </div>
+            
+                <div class="comment"><a href="/users/jag/">jag</a> Saw this on the diag yesterday!</div>
+                
+            
+
+            
+                    <form action="/likes/?target=%2Fposts%2F4%2F" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="operation" value="like"/>
+                        <input type="hidden" name="postid" value="4"/>
+                        <input type="submit" name="like" value="like"/>
+                    </form>
+            
+            <form action="/comments/?target=%2Fposts%2F4%2F" method="post" enctype="multipart/form-data">
+                  <input type="hidden" name="operation" value="create"/>
+                  <input type="hidden" name="postid" value="4"/>
+                  <input type="text" name="text" required/>
+                  <input type="submit" name="comment" value="comment"/>
+            </form>
+
+            
+        </div>
+    </body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>  
+        <link rel="stylesheet" href="/static/css/style.css">
+        <title>insta485</title>
+    </head>
+    <body>
+        <div class="headline">
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
+            <div class="right">  
+                <a href="/explore/">explore</a>
+                |
+                <a href="/users/awdeorio/">awdeorio</a>
+            </div>
+        </div>
+        <div class="user">  
+            <div class="username">awdeorio</div>
+            
+                <a href="/accounts/edit/" >Edit profile</a>
+                <form action="/accounts/logout/" method="post" enctype="multipart/form-data">
+                  <input type="submit" name="logout" value="Logout"/>
+                </form>
+            
+
+            
+            <div class="userinfo">
+                
+                    2 posts 
+                
+                <a href="/users/awdeorio/followers/">
+                    
+                        2 followers 
+                    
+                </a>
+                <a href="/users/awdeorio/following/">2 following</a>
+            </div>
+            <div class="userinfo">Andrew DeOrio</div>
+
+            
+                <form action="/posts/?target=/users/awdeorio/" method="post" enctype="multipart/form-data">
+                  <input type="file" name="file" accept="image/*" required/>
+                  <input type="submit" name="create_post" value="upload new post"/>
+                  <input type="hidden" name="operation" value="create"/>
+                </form>
+            
+
+            
+                <a href="/posts/1/" class="userphoto"><img alt="Image Not Loaded" src="/uploads/122a7d27ca1d7420a1072f695d9290fad4501a41.jpg"></a>
+            
+                <a href="/posts/3/" class="userphoto"><img alt="Image Not Loaded" src="/uploads/9887e06812ef434d291e4936417d125cd594b38a.jpg"></a>
+            
+        </div>
+    </body>
+</html>

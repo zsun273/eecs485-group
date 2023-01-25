@@ -23,14 +23,14 @@
                         <div class="time">
                             {% if follower.username in people_following %}
                                 following
-                                <form action="/following/?target={{url_for('followers', username=current_username)}}" method="post" enctype="multipart/form-data">
+                                <form action="/following/?target={{url_for('following', username=current_username)}}" method="post" enctype="multipart/form-data">
                                   <input type="submit" name="unfollow" value="unfollow"/>
                                   <input type="hidden" name="username" value="{{follower.username}}"/>
                                   <input type="hidden" name="operation" value="unfollow"/>
                                 </form>
                             {% else %}
                                 not following
-                                <form action="/following/?target={{url_for('followers', username=current_username)}}" method="post" enctype="multipart/form-data">
+                                <form action="/following/?target={{url_for('following', username=current_username)}}" method="post" enctype="multipart/form-data">
                                   <input type="submit" name="follow" value="follow"/>
                                   <input type="hidden" name="username" value="{{follower.username}}"/>
                                   <input type="hidden" name="operation" value="follow"/>

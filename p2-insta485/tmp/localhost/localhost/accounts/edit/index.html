@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <link rel="stylesheet" href="{{url_for('static_uploads', filename='css/style.css')}}">
+        <link rel="stylesheet" href="/static/css/style.css">
         <title>insta485</title>
     </head>
     <body>
         <div class="headline">
-            <a href="/" class="logo"><img alt="Image Not Loaded" src="{{url_for('static_uploads', filename='images/ins.png')}}"></a>
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
             <div class="right">
                 <a href="/explore/">explore</a>
                 |
-                <a href="/users/{{logname}}/">{{logname}}</a>
+                <a href="/users/awdeorio/">awdeorio</a>
             </div>
         </div>
 <div>
-    <div class="profile"><img alt="Image Not Loaded" src="{{url_for('uploads', filename=user_img_url)}}">
-        <span>{{ logname }}</span>
+    <div class="profile"><img alt="Image Not Loaded" src="/uploads/e1a7c5c32973862ee15173b0259e3efdb6a391af.jpg">
+        <span>awdeorio</span>
     </div>
 <form action="/accounts/?target=/accounts/edit/" method="post" enctype="multipart/form-data">
      <label for="file">Photo: </label>
@@ -23,10 +23,10 @@
     <input type="file" name="file" accept="image/*"/><br>
      <label for="fullname">Name: </label>
      <input id="fullname" /><br>
-    <input type="text" name="fullname" value="{{ fullname }}" required/><br>
+    <input type="text" name="fullname" value="Andrew DeOrio" required/><br>
      <label for="email">Email: </label>
      <input id="email" /><br>
-    <input type="text" name="email" value="{{ email }}" required/><br><br>
+    <input type="text" name="email" value="awdeorio@umich.edu" required/><br><br>
     <input type="submit" name="update" value="submit"/>
     <input type="hidden" name="operation" value="edit_account"/>
 </form>

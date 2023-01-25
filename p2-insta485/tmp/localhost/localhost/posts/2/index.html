@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>  
+        <link rel="stylesheet" href="/static/css/style.css">
+        <title>insta485</title>
+    </head>
+    <body>
+        <div class="headline">
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
+            <div class="right">  
+                <a href="/explore/">explore</a>
+                |
+                <a href="/users/awdeorio/">awdeorio</a>
+            </div>
+        </div>
+        <div class="post">  
+            <div class="posthead">  
+                <a href="/users/jflinn/" class="profile"><img alt="Image Not Loaded" src="/uploads/505083b8b56c97429a728b68f31b0b2a089e5113.jpg"></a>
+                <a href="/users/jflinn/">jflinn</a>
+                <a href="/posts/2/" class="time">just now</a>
+            </div>
+            <div class="photo"><img alt="Image Not Loaded" src="/uploads/ad7790405c539894d25ab8dcf0b79eed3341e109.jpg"></div>
+            <div class="comment">
+                
+                    2 likes
+                
+            </div>
+            
+                <div class="comment"><a href="/users/awdeorio/">awdeorio</a> Sick #crossword</div>
+                
+                        <form action="/comments/?target=%2Fposts%2F2%2F" method="post" enctype="multipart/form-data">
+                          <input type="hidden" name="operation" value="delete"/>
+                          <input type="hidden" name="commentid" value="4"/>
+                          <input type="submit" name="uncomment" value="delete"/>
+                        </form>
+                
+            
+
+            
+                    <form action="/likes/?target=%2Fposts%2F2%2F" method="post" enctype="multipart/form-data">
+                      <input type="hidden" name="operation" value="unlike"/>
+                      <input type="hidden" name="postid" value="2"/>
+                      <input type="submit" name="unlike" value="unlike"/>
+                    </form>
+            
+            <form action="/comments/?target=%2Fposts%2F2%2F" method="post" enctype="multipart/form-data">
+                  <input type="hidden" name="operation" value="create"/>
+                  <input type="hidden" name="postid" value="2"/>
+                  <input type="text" name="text" required/>
+                  <input type="submit" name="comment" value="comment"/>
+            </form>
+
+            
+        </div>
+    </body>
+</html>

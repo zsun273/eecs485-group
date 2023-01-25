@@ -32,7 +32,7 @@
                 {% if comment.owner == logname %}
                         <form action="{{ url_for('handle_comments', target=url_for('show_post', postid=post.postid)) }}" method="post" enctype="multipart/form-data">
                           <input type="hidden" name="operation" value="delete"/>
-                          <input type="hidden" name="commentid" value="comment.commentid"/>
+                          <input type="hidden" name="commentid" value="{{comment.commentid}}"/>
                           <input type="submit" name="uncomment" value="delete"/>
                         </form>
                 {% endif %}
@@ -59,9 +59,9 @@
             </form>
 
             {% if post.owner == logname %}
-                <form action="/posts/{{post.postid}}/?target={{ url_for('show_user', username=logname) }}" method="post" enctype="multipart/form-data">
+                <form action="/posts/?target={{ url_for('show_user', username=logname) }}" method="post" enctype="multipart/form-data">
                   <input type="hidden" name="operation" value="delete"/>
-                  <input type="hidden" name="postid" value="post.postid"/>
+                  <input type="hidden" name="postid" value="{{post.postid}}"/>
                   <input type="submit" name="delete" value="delete this post"/>
                 </form>
             {% endif %}

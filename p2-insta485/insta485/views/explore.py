@@ -12,25 +12,21 @@ import insta485
 def show_explore():
     """Show explore page."""
     # Redirecting
-
     if 'username' in flask.session:
         logname = flask.session['username']
     else:
         return flask.redirect(flask.url_for('login'))
 
-    # Connect to database
-    connection = insta485.model.get_db()
-
     # Query database
-    cur = connection.execute(
+    users = insta485.model.query_db(
         "SELECT DISTINCT users.username, users.filename "
         "FROM users "
         "WHERE users.username <> ? "
         "AND users.username NOT IN "
-        "(SELECT following.username2 FROM following WHERE following.username1 == ?)",
+        "(SELECT following.username2 "
+        "FROM following WHERE following.username1 = ?)",
         (logname, logname,)
     )
-    users = cur.fetchall()
 
     context = {"users": users, "logname": logname}
 

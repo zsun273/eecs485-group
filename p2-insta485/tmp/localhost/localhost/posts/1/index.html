@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>  
+        <link rel="stylesheet" href="/static/css/style.css">
+        <title>insta485</title>
+    </head>
+    <body>
+        <div class="headline">
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="/static/images/ins.png"></a>
+            <div class="right">  
+                <a href="/explore/">explore</a>
+                |
+                <a href="/users/awdeorio/">awdeorio</a>
+            </div>
+        </div>
+        <div class="post">  
+            <div class="posthead">  
+                <a href="/users/awdeorio/" class="profile"><img alt="Image Not Loaded" src="/uploads/e1a7c5c32973862ee15173b0259e3efdb6a391af.jpg"></a>
+                <a href="/users/awdeorio/">awdeorio</a>
+                <a href="/posts/1/" class="time">just now</a>
+            </div>
+            <div class="photo"><img alt="Image Not Loaded" src="/uploads/122a7d27ca1d7420a1072f695d9290fad4501a41.jpg"></div>
+            <div class="comment">
+                
+                    3 likes
+                
+            </div>
+            
+                <div class="comment"><a href="/users/jflinn/">jflinn</a> Walking the plank #chickensofinstagram</div>
+                
+            
+                <div class="comment"><a href="/users/awdeorio/">awdeorio</a> This was after trying to teach them to do a #crossword</div>
+                
+                        <form action="/comments/?target=%2Fposts%2F1%2F" method="post" enctype="multipart/form-data">
+                          <input type="hidden" name="operation" value="delete"/>
+                          <input type="hidden" name="commentid" value="6"/>
+                          <input type="submit" name="uncomment" value="delete"/>
+                        </form>
+                
+            
+
+            
+                    <form action="/likes/?target=%2Fposts%2F1%2F" method="post" enctype="multipart/form-data">
+                      <input type="hidden" name="operation" value="unlike"/>
+                      <input type="hidden" name="postid" value="1"/>
+                      <input type="submit" name="unlike" value="unlike"/>
+                    </form>
+            
+            <form action="/comments/?target=%2Fposts%2F1%2F" method="post" enctype="multipart/form-data">
+                  <input type="hidden" name="operation" value="create"/>
+                  <input type="hidden" name="postid" value="1"/>
+                  <input type="text" name="text" required/>
+                  <input type="submit" name="comment" value="comment"/>
+            </form>
+
+            
+                <form action="/posts/?target=/users/awdeorio/" method="post" enctype="multipart/form-data">
+                  <input type="hidden" name="operation" value="delete"/>
+                  <input type="hidden" name="postid" value="1"/>
+                  <input type="submit" name="delete" value="delete this post"/>
+                </form>
+            
+        </div>
+    </body>
+</html>
