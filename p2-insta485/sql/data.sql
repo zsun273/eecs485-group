@@ -3,19 +3,19 @@ PRAGMA foreign_keys = ON;
 -- users table
 INSERT INTO users(username, fullname, email, filename, password)
 VALUES ('awdeorio', 'Andrew DeOrio', 'awdeorio@umich.edu',
-        'e1a7c5c32973862ee15173b0259e3efdb6a391af.jpg', 'password');
+        'e1a7c5c32973862ee15173b0259e3efdb6a391af.jpg', 'sha512$555fc6cb2ba0485b80ca96de68967093$1117c22df3b16efd50cc5210bad63bc27da14ad1dafd9fdc089620ec37d4063b2d135af5e050bb0ad701c426ab287ecb432a5ca6443408bcfced53edcae639b5');
 
 INSERT INTO users(username, fullname, email, filename, password)
 VALUES ('jflinn', 'Jason Flinn', 'jflinn@umich.edu',
-        '505083b8b56c97429a728b68f31b0b2a089e5113.jpg', 'password');
+        '505083b8b56c97429a728b68f31b0b2a089e5113.jpg', 'sha512$555fc6cb2ba0485b80ca96de68967093$1117c22df3b16efd50cc5210bad63bc27da14ad1dafd9fdc089620ec37d4063b2d135af5e050bb0ad701c426ab287ecb432a5ca6443408bcfced53edcae639b5');
 
 INSERT INTO users(username, fullname, email, filename, password)
 VALUES ('michjc', 'Michael Cafarella', 'michjc@umich.edu',
-        '5ecde7677b83304132cb2871516ea50032ff7a4f.jpg', 'password');
+        '5ecde7677b83304132cb2871516ea50032ff7a4f.jpg', 'sha512$555fc6cb2ba0485b80ca96de68967093$1117c22df3b16efd50cc5210bad63bc27da14ad1dafd9fdc089620ec37d4063b2d135af5e050bb0ad701c426ab287ecb432a5ca6443408bcfced53edcae639b5');
 
 INSERT INTO users(username, fullname, email, filename, password)
 VALUES ('jag', 'H.V. Jagadish', 'jag@umich.edu',
-        '73ab33bd357c3fd42292487b825880958c595655.jpg', 'password');
+        '73ab33bd357c3fd42292487b825880958c595655.jpg', 'sha512$555fc6cb2ba0485b80ca96de68967093$1117c22df3b16efd50cc5210bad63bc27da14ad1dafd9fdc089620ec37d4063b2d135af5e050bb0ad701c426ab287ecb432a5ca6443408bcfced53edcae639b5');
 
 -- posts table
 INSERT INTO posts(filename, owner) VALUES ('122a7d27ca1d7420a1072f695d9290fad4501a41.jpg', 'awdeorio');

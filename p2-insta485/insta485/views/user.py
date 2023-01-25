@@ -11,11 +11,11 @@ import insta485
 @insta485.app.route('/users/<username>/', methods=['GET'])
 def show_user(username):
     """Show user page."""
+    if 'username' not in flask.session:
+        return flask.redirect(flask.url_for('login'))
     # Connect to database
     connection = insta485.model.get_db()
-
-    # logname = flask.session['username']
-    logname = "awdeorio"
+    logname = flask.session['username']
 
     users = connection.execute(
         "SELECT  * "
@@ -68,9 +68,10 @@ def show_user(username):
 @insta485.app.route('/users/<username>/followers/', methods=['GET'])
 def followers(username):
     """Show follower page."""
-    # logname = flask.session['username']
-    logname = "awdeorio"
+    if 'username' not in flask.session:
+        return flask.redirect(flask.url_for('login'))
 
+    logname = flask.session['username']
     connection = insta485.model.get_db()
 
     users = connection.execute(
@@ -110,9 +111,10 @@ def followers(username):
 @insta485.app.route('/users/<username>/following/', methods=['GET'])
 def following(username):
     """Show following page."""
-    # logname = flask.session['username']
-    logname = "awdeorio"
+    if 'username' not in flask.session:
+        return flask.redirect(flask.url_for('login'))
 
+    logname = flask.session['username']
     connection = insta485.model.get_db()
 
     users = connection.execute(

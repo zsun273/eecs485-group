@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="stylesheet" href="{{url_for('static_uploads', filename='css/style.css')}}">
+        <title>insta485</title>
+    </head>
+    <body>
+        <div class="headline">
+            <a href="/" class="logo"><img alt="Image Not Loaded" src="{{url_for('static_uploads', filename='images/ins.png')}}"></a>
+            <div class="right">
+                <a href="/explore/">explore</a>
+                |
+                <a href="/users/{{logname}}/">{{logname}}</a>
+            </div>
+        </div>
+<div>
+    <div class="profile"><img alt="Image Not Loaded" src="{{url_for('uploads', filename=user_img_url)}}">
+        <span>{{ logname }}</span>
+    </div>
+<form action="/accounts/?target=/accounts/edit/" method="post" enctype="multipart/form-data">
+     <label for="file">Photo: </label><br>
+    <input type="file" name="file" accept="image/*"/><br>
+     <label for="fullname">Name: </label><br>
+    <input type="text" name="fullname" value="{{ fullname }}" required/><br>
+     <label for="email">Email: </label><br>
+    <input type="text" name="email" value="{{ email }}" required/><br><br>
+    <input type="submit" name="update" value="submit"/>
+    <input type="hidden" name="operation" value="edit_account"/>
+</form>
+    <a href="/accounts/password/">Change Password</a>
+   <a href="/accounts/delete/">Delete Account</a>
+</div>
+</body>
+</html>

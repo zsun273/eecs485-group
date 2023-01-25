@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <link rel="stylesheet" href="{{url_for('static_uploads', filename='css/style.css')}}">
+    <title>insta485</title>
+</head>
+<body>
+<div class="headline">
+    <a href="{{ url_for('show_index') }}" class="logo"><img alt="Image Not Loaded" src="{{url_for('static_uploads', filename='images/ins.png')}}"></a>
+    <div class="right">
+        <span>login</span>
+    </div>
+</div>
+<form action="/accounts/?target={{ url_for('show_index') }}" method="post" enctype="multipart/form-data">
+    <label for="file">Photo: </label><br>
+    <input type="file" name="file" required> Photo</input><br>
+    <label for="fullname">Name: </label><br>
+    <input type="text" name="fullname" required/><br>
+    <label for="username">Username: </label><br>
+    <input type="text" name="username" required/><br>
+    <label for="email">Email: </label><br>
+    <input type="text" name="email" required/><br>
+    <label for="password">Password: </label><br>
+    <input type="password" name="password" required/><br><br>
+    <input type="submit" name="signup" value="sign up"/>
+    <input type="hidden" name="operation" value="create"/>
+</form>
+</body>
+</html>

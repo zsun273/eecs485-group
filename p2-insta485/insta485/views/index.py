@@ -4,6 +4,8 @@ Insta485 index (main) view.
 URLs include:
 /
 """
+import os
+
 import flask
 import arrow
 import insta485
@@ -12,15 +14,14 @@ import insta485
 @insta485.app.route('/', methods=['GET'])
 def show_index():
     """Display / route."""
-    # if 'username' not in flask.session:
-    #     return flask.redirect(flask.url_for('login'))
-
+    if 'username' not in flask.session:
+        return flask.redirect(flask.url_for('login'))
     # Connect to database
     connection = insta485.model.get_db()
 
     # Query database
-    # logname = flask.session['username']
-    logname = "awdeorio"
+    logname = flask.session['username']
+
     cur = connection.execute(
         "SELECT DISTINCT posts.postid, posts.owner, "
         "posts.filename, posts.created "
@@ -73,8 +74,7 @@ def show_index():
     # Add database info to context
     context = {"posts": posts, "logname": logname}
 
-    print(context)
-    # print(flask.session)
+    # print(context)
 
     return flask.render_template("index.html", **context)
 
@@ -103,14 +103,21 @@ def handle_comments():
     return flask.redirect(target)
 
 
-@insta485.app.route('/uploads/<filename>/')
+@insta485.app.route('/uploads/<filename>')
 def uploads(filename):
     """Handle uploads request from upload folder."""
+    if 'username' not in flask.session:
+        flask.abort(403)
+
+    path = insta485.app.config['UPLOAD_FOLDER']/filename
+    if not os.path.exists(path):
+        flask.abort(404)
+
     return flask.send_from_directory(
         insta485.app.config["UPLOAD_FOLDER"], filename)
 
 
-@insta485.app.route('/static/<filename>/')
+@insta485.app.route('/static/<filename>')
 def static_uploads(filename):
     """Handle uploads request from static folder."""
     return flask.send_from_directory(

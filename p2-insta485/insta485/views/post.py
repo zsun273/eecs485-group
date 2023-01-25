@@ -12,11 +12,12 @@ import insta485
 @insta485.app.route('/posts/<postid>/', methods=['GET'])
 def show_post(postid):
     """Show post page."""
+    if 'username' not in flask.session:
+        return flask.redirect(flask.url_for('login'))
+
     # Connect to database
     connection = insta485.model.get_db()
-
-    # logname = flask.session['username']
-    logname = "awdeorio"
+    logname = flask.session['username']
 
     post = connection.execute(
         "SELECT p.postid, p.filename, p.owner, p.created, "

@@ -16,7 +16,7 @@
         <div class="user">  
             <div class="username">{{users.username}}</div>
             {% if logname == users.username %}
-                <a href="/accounts/edit/" >Edit profile</a>
+                <a href="{{url_for('edit')}}" >Edit profile</a>
                 <form action="{{url_for('logout')}}" method="post" enctype="multipart/form-data">
                   <input type="submit" name="logout" value="Logout"/>
                 </form>
@@ -26,14 +26,14 @@
                 <div class="userinfo">
                     {% if users.username in people_following %}
                         following
-                        <form action="<FIXME_FOLLOWING_URL_HERE>?target=<FIXME_CURRENT_PAGE_URL_HERE>" method="post" enctype="multipart/form-data">
+                        <form action="/following/?target={{url_for('show_user', username=users.username)}}" method="post" enctype="multipart/form-data">
                           <input type="submit" name="unfollow" value="unfollow"/>
                           <input type="hidden" name="username" value="{{users.username}}"/>
                           <input type="hidden" name="operation" value="unfollow"/>
                         </form>
                     {% else %}
                         not following
-                        <form action="<FIXME_FOLLOWING_URL_HERE>?target=<FIXME_CURRENT_PAGE_URL_HERE>" method="post" enctype="multipart/form-data">
+                        <form action="/following/?target={{url_for('show_user', username=users.username)}}" method="post" enctype="multipart/form-data">
                           <input type="submit" name="follow" value="follow"/>
                           <input type="hidden" name="username" value="{{users.username}}"/>
                           <input type="hidden" name="operation" value="follow"/>
@@ -59,7 +59,7 @@
             <div class="userinfo">{{users.fullname}}</div>
 
             {% if logname == users.username %}
-                <form action="<FIXME_POSTS_URL_HERE>?target=<FIXME_CURRENT_PAGE_URL_HERE>" method="post" enctype="multipart/form-data">
+                <form action="/posts/?target={{url_for('show_user', username=users.username)}}" method="post" enctype="multipart/form-data">
                   <input type="file" name="file" accept="image/*" required/>
                   <input type="submit" name="create_post" value="upload new post"/>
                   <input type="hidden" name="operation" value="create"/>
