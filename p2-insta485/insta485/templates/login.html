@@ -13,9 +13,9 @@
         </div>
         <form action="/accounts/?target={{ url_for('show_index') }}" method="post" enctype="multipart/form-data">
             <label for="username">Username : </label><br>
-              <input type="text" name="username" required/><br>
+              <input id="username" type="text" name="username" required/><br>
             <label for="password">Password: </label><br>
-              <input type="password" name="password" required/><br><br>
+              <input id="password" type="password" name="password" required/><br><br>
               <input type="submit" value="login"/>
               <input type="hidden" name="operation" value="login"/>
         </form>

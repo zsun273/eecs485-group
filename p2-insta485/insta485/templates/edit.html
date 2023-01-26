@@ -19,14 +19,11 @@
     </div>
 <form action="/accounts/?target=/accounts/edit/" method="post" enctype="multipart/form-data">
      <label for="file">Photo: </label>
-     <input id="file" /><br>
-    <input type="file" name="file" accept="image/*"/><br>
+    <input id="file" type="file" name="file" accept="image/*"/><br>
      <label for="fullname">Name: </label>
-     <input id="fullname" /><br>
-    <input type="text" name="fullname" value="{{ fullname }}" required/><br>
+    <input id="fullname" type="text" name="fullname" value="{{ fullname }}" required/><br>
      <label for="email">Email: </label>
-     <input id="email" /><br>
-    <input type="text" name="email" value="{{ email }}" required/><br><br>
+    <input id="email" type="text" name="email" value="{{ email }}" required/><br><br>
     <input type="submit" name="update" value="submit"/>
     <input type="hidden" name="operation" value="edit_account"/>
 </form>

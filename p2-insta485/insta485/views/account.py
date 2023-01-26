@@ -80,7 +80,7 @@ def ac_create():
     email = request.form.get('email')
 
     if not username or not passwords or \
-            not fullname or not email or ('file' not in request.files):
+            not fullname or not email or (not request.files['file'].filename):
         abort(400)
 
     file = request.files['file'].filename
@@ -157,7 +157,7 @@ def ac_edit():
         request.form["fullname"], request.form["email"],
         username,))
 
-    if "file" in request.files:
+    if request.files['file'].filename:
         # delete old file
         cur = insta485.model.query_db(
             "SELECT filename FROM users WHERE username=?",
