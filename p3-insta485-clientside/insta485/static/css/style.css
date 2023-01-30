@@ -1,0 +1,106 @@
+a{
+    TEXT-DECORATION:none;
+    color:#000000;
+    font-weight:bold;
+}
+
+body{
+    width: 720px;
+    background: #fff;
+    position: relative;
+    font-family: 'roboto';
+    padding: 20px;
+    margin: 20px;
+    margin-top: 80px;
+}
+
+.left{
+    float: left;
+    margin-right: auto;
+}
+
+.center{
+    display: inline;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.right{
+    float: right;
+    margin-left: auto;
+}
+
+.logo img{
+    width: 60px;
+    height: 60px;
+}
+
+.profile img{
+    width: 50px;
+    height: 50px;
+    margin: 15px;
+}
+
+.photo img{
+    width: 100%;
+}
+
+.userphoto img{
+    width: 45%;
+    padding: 5px;
+}
+
+.headline{
+    position: fixed;
+    top: 0;
+    width: 760px;
+    border-bottom: 1px solid #dfdfdf;
+    padding: 10px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    font-size:20px;
+}
+
+.post{
+    width: 100%;
+    height: auto;
+    border: 1px solid #dfdfdf;
+    border-radius: 5px;
+    margin:20px;
+    font-size:15px;
+}
+
+.posthead{
+    display: flex;
+    align-items: center;
+}
+
+.time{
+    float: right;
+    margin-left: auto;
+    color:gray;
+    padding: 15px;
+}
+
+.comment{
+    padding: 5px;
+}
+
+.user{
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+    margin:20px;
+    font-size:20px;
+}
+
+.username{
+    font-size:40px;
+    padding: 10px;
+}
+
+.userinfo{
+    font-size:20px;
+    padding: 5px;
+}

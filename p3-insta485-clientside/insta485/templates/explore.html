@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>  
+        <link rel="stylesheet" href="{{url_for('static_uploads', filename='css/style.css')}}">
+        <title>insta485</title>
+    </head>
+    <body>
+        <div class="headline">
+            <a href="{{url_for('show_index')}}" class="logo"><img alt="Image Not Loaded" src="{{url_for('static_uploads', filename='images/ins.png')}}"></a>
+            <div class="right">  
+                <a href="/explore/">explore</a>
+                |
+                <a href="/users/{{logname}}/">{{logname}}</a>
+            </div>
+        </div>
+        <div class="username">Discover People</div>
+        {% for user in users %}
+            <div class="post">  
+                <div class="posthead">  
+                    <div class="profile"><img alt="Image Not Loaded" src="{{url_for('uploads', filename = user.filename)}}"></div>
+                    <a href="/users/{{user.username}}/">{{user.username}}</a>
+                    <div class="time">
+                        <form action="/following/?target=/explore/" method="post" enctype="multipart/form-data">
+                            <input type="submit" name="follow" value="follow"/>
+                            <input type="hidden" name="username" value="{{user.username}}"/>
+                            <input type="hidden" name="operation" value="follow"/>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </body>
+</html>
