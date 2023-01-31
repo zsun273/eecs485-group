@@ -139,3 +139,10 @@ env/*
 # submission file
 *.tar.gz
 
+session.json
+cookies.txt
+var/
+tmp/
+bundle.js
+node_modules/
+
