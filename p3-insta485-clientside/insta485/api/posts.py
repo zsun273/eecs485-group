@@ -7,28 +7,82 @@ import insta485
 from insta485 import invalid_usage
 
 
-@insta485.app.route('/api/v1/posts/<int:postid_url_slug>/')
-def get_post(postid_url_slug):
-    """Return post on postid.
+@insta485.app.route('/api/v1/posts/<int:postid>/')
+def get_post(postid):
+    """Return details for one post."""
+    if session:
+        if 'username' not in session:
+            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+        username = session['username']
 
-    Example:
-    {
-      "created": "2017-09-28 04:33:28",
-      "imgUrl": "/uploads/122a7d27ca1d7420a1072f695d9290fad4501a41.jpg",
-      "owner": "awdeorio",
-      "ownerImgUrl": "/uploads/e1a7c5c32973862ee15173b0259e3efdb6a391af.jpg",
-      "ownerShowUrl": "/users/awdeorio/",
-      "postShowUrl": "/posts/1/",
-      "url": "/api/v1/posts/1/"
-    }
-    """
+    elif request.authorization:
+        username = request.authorization['username']
+        password = request.authorization['password']
+        exist = insta485.model.query_db('SELECT password '
+                                        'FROM users WHERE username=?',
+                                        (username,))
+        if not exist:
+            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+        _, salt_pass, encrpt_password = exist[0]['password'].split('$')
+        paswd_entered = insta485.model.encrypt_with_salt(password, salt_pass)
+        if paswd_entered != encrpt_password:
+            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+
+    else:
+        raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+
+    if postid not in [post["postid"] for post in insta485.model.query_db(
+            "SELECT p.postid "
+            "FROM posts p ", )]:
+        raise invalid_usage.InvalidUsage('Not Found', status_code=404)
+
+    comments = insta485.model.query_db(
+        "SELECT c.commentid, c.owner, c.text "
+        "FROM comments c "
+        "WHERE c.postid = ?"
+        "ORDER BY c.commentid ASC ",
+        (postid,)
+    )
+    for comment in comments:
+        comment["lognameOwnsThis"] = (username == comment["owner"])
+        comment["ownerShowUrl"] = url_for("show_user",
+                                          username=comment["owner"])
+        comment["url"] = "/api/v1/comments/" + str(comment["commentid"]) + "/"
+
+    post = insta485.model.query_db(
+        "SELECT p.owner, p.filename, p.created, "
+        "u.filename AS 'owner_img_url' "
+        "FROM posts p, users u "
+        "WHERE p.postid = ? "
+        "AND  p.owner = u.username ",
+        (postid,), one=True
+    )
+
+    likes_data = insta485.model.query_db(
+        "SELECT l.likeid, l.owner "
+        "FROM likes l "
+        "WHERE l.postid = ? ",
+        (postid,)
+    )
+    logname_like = (username in [like["owner"] for like in likes_data])
+    like_id_logname = [like["likeid"] for like in likes_data
+                       if like["owner"] == username]
+    likes = {"lognameLikesThis": logname_like,
+             "numLikes": len(likes_data),
+             "url": f"/api/v1/likes/{like_id_logname[0]}/"
+             if logname_like else None}
+
     context = {
-        "created": "2017-09-28 04:33:28",
-        "imgUrl": "/uploads/122a7d27ca1d7420a1072f695d9290fad4501a41.jpg",
-        "owner": "awdeorio",
-        "ownerImgUrl": "/uploads/e1a7c5c32973862ee15173b0259e3efdb6a391af.jpg",
-        "ownerShowUrl": "/users/awdeorio/",
-        "postid": f"/posts/{postid_url_slug}/",
+        "comments": comments,
+        "comments_url": "/api/v1/comments/?postid=" + str(postid),
+        "created": post["created"],
+        "imgUrl": url_for('uploads', filename=post["filename"]),
+        "likes": likes,
+        "owner": post["owner"],
+        "ownerImgUrl": url_for('uploads', filename=post["owner_img_url"]),
+        "ownerShowUrl": url_for("show_user", username=post["owner"]),
+        "postShowUrl": url_for("show_post", postid=postid),
+        "postid": postid,
         "url": flask.request.path,
     }
     return flask.jsonify(**context)
