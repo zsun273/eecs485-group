@@ -1,5 +1,8 @@
 """Insta485 model (database) API."""
+import hashlib
 import sqlite3
+import uuid
+
 import flask
 import insta485
 
@@ -46,6 +49,28 @@ def update_db(query, args=()):
         close_db(None)
     except sqlite3.Error as err:
         print("UPDATE ERROR: ", err)
+
+
+def encrypt_with_salt(password_1, salt_pass):
+    """Encrypting password with known salt and algorithm."""
+    algorithm = 'sha512'
+    hash_obj = hashlib.new(algorithm)
+    password_salted = salt_pass + password_1
+    hash_obj.update(password_salted.encode('utf-8'))
+    password_hash = hash_obj.hexdigest()
+    return password_hash
+
+
+def encrypt_new_password(password_1):
+    """Encrypting password with default salt and algorithm."""
+    algorithm = 'sha512'
+    salt = uuid.uuid4().hex
+    hash_obj = hashlib.new(algorithm)
+    password_salted = salt + password_1
+    hash_obj.update(password_salted.encode('utf-8'))
+    password_hash = hash_obj.hexdigest()
+    password_db_string = "$".join([algorithm, salt, password_hash])
+    return password_db_string
 
 
 @insta485.app.teardown_appcontext

@@ -6,33 +6,10 @@ URLs include:
 """
 import os
 import uuid
-import hashlib
 from _pytest import pathlib
 from flask import request, redirect, session, \
     url_for, abort, render_template
 import insta485
-
-
-def encrypt_with_salt(password_1, salt_pass):
-    """Encrypting password with known salt and algorithm."""
-    algorithm = 'sha512'
-    hash_obj = hashlib.new(algorithm)
-    password_salted = salt_pass + password_1
-    hash_obj.update(password_salted.encode('utf-8'))
-    password_hash = hash_obj.hexdigest()
-    return password_hash
-
-
-def encrypt_new_password(password_1):
-    """Encrypting password with default salt and algorithm."""
-    algorithm = 'sha512'
-    salt = uuid.uuid4().hex
-    hash_obj = hashlib.new(algorithm)
-    password_salted = salt + password_1
-    hash_obj.update(password_salted.encode('utf-8'))
-    password_hash = hash_obj.hexdigest()
-    password_db_string = "$".join([algorithm, salt, password_hash])
-    return password_db_string
 
 
 @insta485.app.route('/accounts/', methods=['POST'])
@@ -64,7 +41,7 @@ def ac_login():
     if not exist:
         abort(403)
     _, salt_pass, encrpt_password = exist[0]['password'].split('$')
-    paswd_entered = encrypt_with_salt(passwords, salt_pass)
+    paswd_entered = insta485.model.encrypt_with_salt(passwords, salt_pass)
     if paswd_entered != encrpt_password:
         abort(403)
     session['username'] = username
@@ -101,10 +78,8 @@ def ac_create():
         insta485.model.update_db('INSERT INTO users(username,fullname,'
                                  'email,filename,password) '
                                  'VALUES (?,?,?,?,?)',
-                                 (username,
-                                  fullname,
-                                  email,
-                                  uuid_basename,
+                                 (username, fullname, email, uuid_basename,
+                                  insta485.model.
                                   encrypt_new_password(passwords),))
         # Save to disk
         path = insta485.app.config["UPLOAD_FOLDER"] / uuid_basename
@@ -205,7 +180,7 @@ def ac_update():
         abort(400)
 
     _, salt, encrypted = cur['password'].split('$')
-    right_password = encrypt_with_salt(passwords, salt)
+    right_password = insta485.model.encrypt_with_salt(passwords, salt)
 
     if right_password != encrypted:
         abort(403)
@@ -214,7 +189,8 @@ def ac_update():
         abort(401)
 
     insta485.model.update_db("UPDATE users SET password=?",
-                             (encrypt_new_password(new_password),))
+                             (insta485.model.
+                              encrypt_new_password(new_password),))
 
     return redirect(redir)
 
