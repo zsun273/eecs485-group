@@ -76,14 +76,5 @@ def delete_like(likeid):
         "DELETE from likes WHERE  likeid = ? AND owner = ?", (likeid, logname),
     )
     db.commit()
-    #return this empty dictionary
-    return flask.jsonify(**context), 204
-
-
-
-
-
-
-
-
-
+    #return success 204 and no content
+    return 204
