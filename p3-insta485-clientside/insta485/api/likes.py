@@ -1,75 +1,80 @@
+"""Likes Rest API."""
 import flask
-from flask import flask, request, session, url_for
 import insta485
 from insta485 import invalid_usage
 
-app = Flask(_name_)
 
-@insta485.app.route('/api/v1/likes/?postid=<postid>/', methods = ['POST'])
+@insta485.app.route('/api/v1/likes/', methods=['POST'])
 def create_like():
-    """Create a Like"""
-    if session is None:
-        raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
-    else if flask.session.get('username') is None:
-        logname = flask.request.authorization.get('username')
-    else:
-        logname = flask.session['username']
+    """Create a Like."""
+    username = insta485.model.check_authorization()
 
-    postid = flask.request.args.get('postid')
-    db = insta485.model.get_db()
-    #check if the postid still exisgt exists
-    the_post = db.execute (
-        "SELECT from likes WHERE postid = ? ", (postid)
+    postid = flask.request.args.get('postid', None)
+    database = insta485.model.get_db()
+    # check if the postid exists
+    if not database.execute(
+            "SELECT * from posts WHERE postid = ? ", postid):
+        raise invalid_usage.InvalidUsage('Not Found', status_code=404)
+
+    like_id = database.execute(
+        "SELECT likeid from likes WHERE owner = ? AND postid = ? ",
+        (username, postid)
     ).fetchone()
-    if the_post is not None:
-        like_id = db.execute (
-            "SELECT likeid from likes WHERE owner = ? AND postid = ? ", (logname, postid)
-        ).fetchone()
-    #create a dictionary:
-    context = {
-        "likeid" : like_id,
-        "url" : f"/api/v1/likes/{like_id}/"
-    }
-    #if that likeid already exist:
-    if like_id is not None:
+
+    # create a dictionary:
+    if like_id:
+        likeid = like_id["likeid"]
+        context = {
+            "likeid": likeid,
+            "url": f"/api/v1/likes/{likeid}/"
+        }
         return flask.jsonify(**context), 200
-    else:
-        #finally uptading the database:
-    db.execute (
-            "INSERT into likes (owner, postid) VALUES (?, ?)", (logname, postid),
-        )
-        db.commit()
+
+    database.execute(
+        "INSERT into likes (owner, postid) VALUES (?, ?)",
+        (username, postid),
+    )
+    database.commit()
+
+    like_id = database.execute(
+        "SELECT likeid from likes WHERE owner = ? AND postid = ? ",
+        (username, postid)
+    ).fetchone()
+    likeid = like_id["likeid"]
+
+    context = {
+        "likeid": likeid,
+        "url": f"/api/v1/likes/{likeid}/"
+    }
     return flask.jsonify(**context), 201
 
 
-@insta485.app.route('/api/v1/likes/<likeid>/', methods = ['DELETE'])
+@insta485.app.route('/api/v1/likes/<likeid>/', methods=['DELETE'])
 def delete_like(likeid):
-    """Delete a Like"""
-    #first check things
-    if session is None:
-        raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
-    else if flask.session.get('username') is None:
-        logname = flask.request.authorization.get('username')
-    else:
-        logname = flask.session['username']
+    """Delete a Like."""
+    username = insta485.model.check_authorization()
 
-    db = insta485.model.get_db()
-    exist = db.execute(
-        "SELECT from likes WHERE likeid = ?", (likeid)
+    database = insta485.model.get_db()
+    exist = database.execute(
+        "SELECT * from likes WHERE likeid = ?", likeid
     ).fetchone()
-    #check if like exist 
+    # check if like exist
     if exist is None:
-        raise invalid_usage.InvalidUsage('Forbidden', status_code=404)
-    #check if the logname owns the like
-    owner = db.execute (
-        "SELECT owner from likes WHERE likeid = ?", (likeid)
+        raise invalid_usage.InvalidUsage('Not Found', status_code=404)
+
+    # check if the logname owns the like
+    owner = database.execute(
+        "SELECT owner from likes WHERE likeid = ?", likeid
     ).fetchone()
-    if logname is not owner:
+
+    if username != owner['owner']:
         raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
-    #update/delete the like in database
-    db.execute (
-        "DELETE from likes WHERE  likeid = ? AND owner = ?", (likeid, logname),
+
+    # update/delete the like in database
+    database.execute(
+        "DELETE from likes WHERE  likeid = ? AND owner = ?",
+        (likeid, username),
     )
-    db.commit()
-    #return success 204 and no content
-    return 204
+    database.commit()
+    # return success 204 and no content
+    return flask.jsonify({}), 204

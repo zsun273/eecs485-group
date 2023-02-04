@@ -4,7 +4,9 @@ import sqlite3
 import uuid
 
 import flask
+from flask import request, session
 import insta485
+from insta485 import invalid_usage
 
 
 def dict_factory(cursor, row):
@@ -71,6 +73,29 @@ def encrypt_new_password(password_1):
     password_hash = hash_obj.hexdigest()
     password_db_string = "$".join([algorithm, salt, password_hash])
     return password_db_string
+
+
+def check_authorization():
+    """Check authorizations."""
+    if session:
+        if 'username' not in session:
+            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+        username = session['username']
+    elif request.authorization:
+        username = request.authorization['username']
+        password = request.authorization['password']
+        exist = insta485.model.query_db('SELECT password '
+                                        'FROM users WHERE username=?',
+                                        (username,))
+        if not exist:
+            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+        _, salt_pass, encrpt_password = exist[0]['password'].split('$')
+        paswd_entered = insta485.model.encrypt_with_salt(password, salt_pass)
+        if paswd_entered != encrpt_password:
+            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+    else:
+        raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+    return username
 
 
 @insta485.app.teardown_appcontext

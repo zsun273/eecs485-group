@@ -13,4 +13,4 @@ def get_resources():
         "posts": "/api/v1/posts/",
         "url": flask.request.path
     }
-    return flask.jsonify(**context)
+    return flask.jsonify(**context), 200

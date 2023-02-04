@@ -2,7 +2,7 @@
 import sys
 
 import flask
-from flask import request, session, url_for
+from flask import request, url_for
 import insta485
 from insta485 import invalid_usage
 
@@ -10,26 +10,7 @@ from insta485 import invalid_usage
 @insta485.app.route('/api/v1/posts/<int:postid>/')
 def get_post(postid):
     """Return details for one post."""
-    if session:
-        if 'username' not in session:
-            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
-        username = session['username']
-
-    elif request.authorization:
-        username = request.authorization['username']
-        password = request.authorization['password']
-        exist = insta485.model.query_db('SELECT password '
-                                        'FROM users WHERE username=?',
-                                        (username,))
-        if not exist:
-            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
-        _, salt_pass, encrpt_password = exist[0]['password'].split('$')
-        paswd_entered = insta485.model.encrypt_with_salt(password, salt_pass)
-        if paswd_entered != encrpt_password:
-            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
-
-    else:
-        raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+    username = insta485.model.check_authorization()
 
     if postid not in [post["postid"] for post in insta485.model.query_db(
             "SELECT p.postid "
@@ -47,7 +28,8 @@ def get_post(postid):
         comment["lognameOwnsThis"] = (username == comment["owner"])
         comment["ownerShowUrl"] = url_for("show_user",
                                           username=comment["owner"])
-        comment["url"] = "/api/v1/comments/" + str(comment["commentid"]) + "/"
+        commentid = comment["commentid"]
+        comment["url"] = f"/api/v1/comments/{commentid}/"
 
     post = insta485.model.query_db(
         "SELECT p.owner, p.filename, p.created, "
@@ -85,32 +67,13 @@ def get_post(postid):
         "postid": postid,
         "url": flask.request.path,
     }
-    return flask.jsonify(**context)
+    return flask.jsonify(**context), 200
 
 
 @insta485.app.route('/api/v1/posts/')
 def get_top_posts():
     """Return 10 newest posts made by logged-in user or who they follow."""
-    if session:
-        if 'username' not in session:
-            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
-        username = session['username']
-
-    elif request.authorization:
-        username = request.authorization['username']
-        password = request.authorization['password']
-        exist = insta485.model.query_db('SELECT password '
-                                        'FROM users WHERE username=?',
-                                        (username,))
-        if not exist:
-            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
-        _, salt_pass, encrpt_password = exist[0]['password'].split('$')
-        paswd_entered = insta485.model.encrypt_with_salt(password, salt_pass)
-        if paswd_entered != encrpt_password:
-            raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
-
-    else:
-        raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
+    username = insta485.model.check_authorization()
 
     postid_limit = request.args.get('postid_lte',
                                     default=sys.maxsize, type=int)
@@ -137,7 +100,8 @@ def get_top_posts():
     if results and (not latest_postid):
         latest_postid = max(item["postid"] for item in results)
     for item in results:
-        item["url"] = "/api/v1/posts/" + str(item["postid"]) + "/"
+        postid = item["postid"]
+        item["url"] = f"/api/v1/posts/{postid}/"
 
     # next field
     next_field = ""
@@ -155,4 +119,4 @@ def get_top_posts():
                        page=request.args.get("page"),
                        postid_lte=request.args.get("postid_lte"))
     }
-    return flask.jsonify(**context)
+    return flask.jsonify(**context), 200
