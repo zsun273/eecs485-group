@@ -36,11 +36,11 @@ def create_like():
     )
     database.commit()
 
-    like_id = database.execute(
+    this_like = database.execute(
         "SELECT likeid from likes WHERE owner = ? AND postid = ? ",
         (username, postid)
     ).fetchone()
-    likeid = like_id["likeid"]
+    likeid = this_like["likeid"]
 
     context = {
         "likeid": likeid,
