@@ -59,7 +59,7 @@ def delete_like(likeid):
     ).fetchone()
     #check if like exist 
     if exist is None:
-        return flask.abort(404)
+        raise invalid_usage.InvalidUsage('Forbidden', status_code=404)
     #check if the logname owns the like
     owner = db.execute (
         "SELECT owner from likes WHERE likeid = ?", (likeid)
