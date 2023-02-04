@@ -65,12 +65,7 @@ def delete_like(likeid):
         "SELECT owner from likes WHERE likeid = ?", (likeid)
     ).fetchone()
     if logname is not owner:
-        return flast.abort(403)
-    #create dictionary 
-    context = {
-        "likeid" : likeid,
-        "url" : f"/api/v1/likes/{like_id}/"
-    }
+        raise invalid_usage.InvalidUsage('Forbidden', status_code=403)
     #update/delete the like in database
     db.execute (
         "DELETE from likes WHERE  likeid = ? AND owner = ?", (likeid, logname),
