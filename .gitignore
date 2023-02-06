@@ -141,8 +141,9 @@ env/*
 
 session.json
 cookies.txt
-var/*
+*/var/
 tmp/
-bundle.js
+*/bundle.js
+*/bundle.js.map
 node_modules/
 

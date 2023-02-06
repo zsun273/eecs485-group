@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import Like from "./like";
+import Comments from "./comments";
 
 // The parameter of this function is an object with a string called url inside it.
 // url is a prop for the Post component.
@@ -7,7 +9,13 @@ export default function Post({ url }) {
   /* Display image and post owner of a single post */
 
   const [imgUrl, setImgUrl] = useState("");
+  const [ownerImgUrl, setOwnerImgUrl] = useState("");
+  const [ownerShowUrl, setOwnerShowUrl] = useState("");
+  const [postShowUrl, setPostShowUrl] = useState("");
   const [owner, setOwner] = useState("");
+  const [created, setCreated] = useState("");
+  const [likes, setLikes] = useState({});
+  const [comments, setComments] = useState([]);
 
   useEffect(() => {
     // Declare a boolean flag that we can use to cancel the API request.
@@ -24,7 +32,14 @@ export default function Post({ url }) {
         // the request. Otherwise, update the state to trigger a new render.
         if (!ignoreStaleRequest) {
           setImgUrl(data.imgUrl);
+          setOwnerImgUrl(data.ownerImgUrl);
           setOwner(data.owner);
+          setCreated(data.created);
+          setLikes(data.likes);
+          setComments(data.comments);
+          setPostShowUrl(data.postShowUrl);
+          setOwnerShowUrl(data.ownerShowUrl);
+          console.log(data);
         }
       })
       .catch((error) => console.log(error));
@@ -35,13 +50,36 @@ export default function Post({ url }) {
       // should avoid updating state.
       ignoreStaleRequest = true;
     };
-  }, [url]);
+  }, [url]); // dependency array, effect run after first render and
+  // every time one of the array changes
 
-  // Render post image and post owner
+  const renderedComments = comments.map((comment) => (
+    <div key={comment.commentid}>
+      {" "}
+      <Comments comment={comment} />{" "}
+    </div>
+  ));
+
+  // Render post
   return (
     <div className="post">
-      <img src={imgUrl} alt="post_image" />
-      <p>{owner}</p>
+      <div className="posthead">
+        <a href={ownerShowUrl} className="profile">
+          <img alt="Not Loaded" src={ownerImgUrl} />
+        </a>
+        <a href={ownerShowUrl}>{owner}</a>
+        <a href={postShowUrl} className="time">
+          {created}
+        </a>
+      </div>
+      <div className="photo">
+        <img alt="Not Loaded" src={imgUrl} />
+      </div>
+      <div className="comments">
+        {" "}
+        <Like likes={likes} />{" "}
+      </div>
+      <div className="comments"> {renderedComments} </div>
     </div>
   );
 }
