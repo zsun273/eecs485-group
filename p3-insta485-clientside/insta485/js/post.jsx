@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import moment from "moment";
 import Like from "./like";
 import Comments from "./comments";
 
@@ -69,7 +70,7 @@ export default function Post({ url }) {
         </a>
         <a href={ownerShowUrl}>{owner}</a>
         <a href={postShowUrl} className="time">
-          {created}
+          {moment.parseZone(created).fromNow()}
         </a>
       </div>
       <div className="photo">
