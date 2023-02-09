@@ -104,3 +104,20 @@ body{
     font-size:20px;
     padding: 5px;
 }
+
+.like-unlike-button{
+    margin: 5px;
+    background-color: #fff;
+    border-radius:10px; 
+    font-size:15px;
+}
+
+.delete-comment-button{
+    margin-left: 5px;
+    background-color: #fff;
+    border-radius:10px; 
+}
+
+.comment-text{
+    padding: 5px;
+}

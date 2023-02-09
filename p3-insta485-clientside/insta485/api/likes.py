@@ -11,14 +11,15 @@ def create_like():
 
     postid = flask.request.args.get('postid', None)
     database = insta485.model.get_db()
+
     # check if the postid exists
     if not database.execute(
-            "SELECT * from posts WHERE postid = ? ", postid):
+            "SELECT * from posts WHERE postid = ? ", (postid,)):
         raise invalid_usage.InvalidUsage('Not Found', status_code=404)
 
     like_id = database.execute(
         "SELECT likeid from likes WHERE owner = ? AND postid = ? ",
-        (username, postid)
+        (username, postid,)
     ).fetchone()
 
     # create a dictionary:
@@ -32,13 +33,13 @@ def create_like():
 
     database.execute(
         "INSERT into likes (owner, postid) VALUES (?, ?)",
-        (username, postid),
+        (username, postid,),
     )
     database.commit()
 
     this_like = database.execute(
         "SELECT likeid from likes WHERE owner = ? AND postid = ? ",
-        (username, postid)
+        (username, postid,)
     ).fetchone()
     likeid = this_like["likeid"]
 
@@ -56,7 +57,7 @@ def delete_like(likeid):
 
     database = insta485.model.get_db()
     exist = database.execute(
-        "SELECT * from likes WHERE likeid = ?", likeid
+        "SELECT * from likes WHERE likeid = ?", (likeid,)
     ).fetchone()
     # check if like exist
     if exist is None:
@@ -64,7 +65,7 @@ def delete_like(likeid):
 
     # check if the logname owns the like
     owner = database.execute(
-        "SELECT owner from likes WHERE likeid = ?", likeid
+        "SELECT owner from likes WHERE likeid = ?", (likeid,)
     ).fetchone()
 
     if username != owner['owner']:
@@ -73,7 +74,7 @@ def delete_like(likeid):
     # update/delete the like in database
     database.execute(
         "DELETE from likes WHERE  likeid = ? AND owner = ?",
-        (likeid, username),
+        (likeid, username,),
     )
     database.commit()
     # return success 204 and no content

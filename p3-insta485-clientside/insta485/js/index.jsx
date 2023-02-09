@@ -39,7 +39,7 @@ export default function Index({ url }) {
   const renderedPosts = results.map((result) => (
     <div key={result.postid}>
       {" "}
-      <Post url={result.url} />{" "}
+      <Post url={result.url} postid={result.postid} />{" "}
     </div>
   ));
 

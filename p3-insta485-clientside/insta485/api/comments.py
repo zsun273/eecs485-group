@@ -12,13 +12,13 @@ def create_comment():
     text = flask.request.json.get('text', None)
 
     # query database
-    post = insta485.model.query_db(
+    database = insta485.model.get_db()
+    post = database.execute(
         "SELECT * "
         "FROM posts "
         "WHERE postid = ?",
-        (postid,),
-        one=True
-    )
+        (postid,)
+    ).fetchone()
 
     # check if the postid exists
     if not post:
@@ -27,21 +27,22 @@ def create_comment():
     # update database
     if not text:
         raise invalid_usage.InvalidUsage('Bad Request', status_code=400)
-    insta485.model.update_db(
+    database.execute(
         "INSERT INTO comments(owner,postid,text) "
         "VALUES (?, ?, ?) ",
         (username, postid, text,)
     )
+    database.commit()
 
     # query database
-    commentid = insta485.model.query_db(
+    commentid = database.execute(
         "SELECT last_insert_rowid() "
         "FROM comments "
-    )
+    ).fetchone()['last_insert_rowid()']
 
     context = {
         "commentid": commentid,
-        "lognameOwnsThis": (username == post['owner']),
+        "lognameOwnsThis": True,
         "owner": username,
         "ownerShowUrl": f"/users/{username}/",
         "text": text,

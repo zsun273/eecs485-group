@@ -93,7 +93,7 @@ def get_top_posts():
         "ORDER BY p.postid DESC "
         "LIMIT ? "
         "OFFSET ?",
-        (username, username, postid_limit, size, size * page)
+        (username, username, postid_limit, size, size * page,)
     )
 
     latest_postid = request.args.get("postid_lte")

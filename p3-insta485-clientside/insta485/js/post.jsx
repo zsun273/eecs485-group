@@ -3,10 +3,11 @@ import PropTypes from "prop-types";
 import moment from "moment";
 import Like from "./like";
 import Comments from "./comments";
+import Comment from "./comment";
 
 // The parameter of this function is an object with a string called url inside it.
 // url is a prop for the Post component.
-export default function Post({ url }) {
+export default function Post({ url, postid }) {
   /* Display image and post owner of a single post */
 
   const [imgUrl, setImgUrl] = useState("");
@@ -17,6 +18,7 @@ export default function Post({ url }) {
   const [created, setCreated] = useState("");
   const [likes, setLikes] = useState({});
   const [comments, setComments] = useState([]);
+  const [commentsUrl, setCommentsUrl] = useState("");
 
   useEffect(() => {
     // Declare a boolean flag that we can use to cancel the API request.
@@ -36,8 +38,17 @@ export default function Post({ url }) {
           setOwnerImgUrl(data.ownerImgUrl);
           setOwner(data.owner);
           setCreated(data.created);
-          setLikes(data.likes);
+          if (data.likes.lognameLikesThis) {
+            setLikes(data.likes);
+          } else {
+            setLikes({
+              lognameLikesThis: data.likes.lognameLikesThis,
+              numLikes: data.likes.numLikes,
+              url: `/api/v1/likes/?postid=${postid}`,
+            });
+          }
           setComments(data.comments);
+          setCommentsUrl(data.comments_url);
           setPostShowUrl(data.postShowUrl);
           setOwnerShowUrl(data.ownerShowUrl);
           console.log(data);
@@ -51,13 +62,12 @@ export default function Post({ url }) {
       // should avoid updating state.
       ignoreStaleRequest = true;
     };
-  }, [url]); // dependency array, effect run after first render and
+  }, [url, postid]); // dependency array, effect run after first render and
   // every time one of the array changes
 
   const renderedComments = comments.map((comment) => (
-    <div key={comment.commentid}>
-      {" "}
-      <Comments comment={comment} />{" "}
+    <div className="comment" key={comment.commentid}>
+      <Comments comment={comment} setComments={setComments} />
     </div>
   ));
 
@@ -76,15 +86,14 @@ export default function Post({ url }) {
       <div className="photo">
         <img alt="Not Loaded" src={imgUrl} />
       </div>
-      <div className="comments">
-        {" "}
-        <Like likes={likes} />{" "}
-      </div>
-      <div className="comments"> {renderedComments} </div>
+      <Like likes={likes} setLikes={setLikes} postid={postid} />
+      {renderedComments}
+      <Comment url={commentsUrl} setComments={setComments} />
     </div>
   );
 }
 
 Post.propTypes = {
   url: PropTypes.string.isRequired,
+  postid: PropTypes.number.isRequired,
 };
