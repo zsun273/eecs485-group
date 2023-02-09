@@ -24,7 +24,8 @@ __webpack_require__.r(__webpack_exports__);
 
 function Comment(_ref) {
   var url = _ref.url,
-    setComments = _ref.setComments;
+    setComments = _ref.setComments,
+    load = _ref.load;
   var _useState = (0,react__WEBPACK_IMPORTED_MODULE_2__.useState)(""),
     _useState2 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1__["default"])(_useState, 2),
     text = _useState2[0],
@@ -57,6 +58,9 @@ function Comment(_ref) {
       return console.log(error);
     });
   }
+  if (!load) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, "");
+  }
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("form", {
     className: "comment-form",
     onSubmit: handleComment
@@ -68,7 +72,8 @@ function Comment(_ref) {
 }
 Comment.propTypes = {
   url: (prop_types__WEBPACK_IMPORTED_MODULE_3___default().string.isRequired),
-  setComments: (prop_types__WEBPACK_IMPORTED_MODULE_3___default().func.isRequired)
+  setComments: (prop_types__WEBPACK_IMPORTED_MODULE_3___default().func.isRequired),
+  load: (prop_types__WEBPACK_IMPORTED_MODULE_3___default().bool.isRequired)
 };
 
 /***/ }),
@@ -234,7 +239,8 @@ __webpack_require__.r(__webpack_exports__);
 function Like(_ref) {
   var likes = _ref.likes,
     setLikes = _ref.setLikes,
-    postid = _ref.postid;
+    postid = _ref.postid,
+    load = _ref.load;
   function handleLike() {
     // Call REST API to post Like
     fetch(likes.url, {
@@ -298,6 +304,9 @@ function Like(_ref) {
       onClick: handleLike
     }, "like");
   }
+  if (!load) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, content);
+  }
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, button, content);
 }
 Like.propTypes = {
@@ -307,7 +316,8 @@ Like.propTypes = {
     url: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().string)
   }).isRequired,
   setLikes: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().func.isRequired),
-  postid: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().number.isRequired)
+  postid: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().number.isRequired),
+  load: (prop_types__WEBPACK_IMPORTED_MODULE_1___default().bool.isRequired)
 };
 
 /***/ }),
@@ -384,6 +394,10 @@ function Post(_ref) {
     _useState18 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState17, 2),
     commentsUrl = _useState18[0],
     setCommentsUrl = _useState18[1];
+  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(false),
+    _useState20 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState19, 2),
+    load = _useState20[0],
+    setLoad = _useState20[1];
   (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(function () {
     // Declare a boolean flag that we can use to cancel the API request.
     var ignoreStaleRequest = false;
@@ -415,6 +429,7 @@ function Post(_ref) {
         setCommentsUrl(data.comments_url);
         setPostShowUrl(data.postShowUrl);
         setOwnerShowUrl(data.ownerShowUrl);
+        setLoad(true);
         console.log(data);
       }
     })["catch"](function (error) {
@@ -463,10 +478,12 @@ function Post(_ref) {
   })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(_like__WEBPACK_IMPORTED_MODULE_3__["default"], {
     likes: likes,
     setLikes: setLikes,
-    postid: postid
+    postid: postid,
+    load: load
   }), renderedComments, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(_comment__WEBPACK_IMPORTED_MODULE_5__["default"], {
     url: commentsUrl,
-    setComments: setComments
+    setComments: setComments,
+    load: load
   }));
 }
 Post.propTypes = {
