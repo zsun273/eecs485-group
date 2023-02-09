@@ -19,7 +19,6 @@ export default function Post({ url, postid }) {
   const [likes, setLikes] = useState({});
   const [comments, setComments] = useState([]);
   const [commentsUrl, setCommentsUrl] = useState("");
-  const [load, setLoad] = useState(false);
 
   useEffect(() => {
     // Declare a boolean flag that we can use to cancel the API request.
@@ -52,7 +51,6 @@ export default function Post({ url, postid }) {
           setCommentsUrl(data.comments_url);
           setPostShowUrl(data.postShowUrl);
           setOwnerShowUrl(data.ownerShowUrl);
-          setLoad(true);
           console.log(data);
         }
       })
@@ -88,9 +86,9 @@ export default function Post({ url, postid }) {
       <div className="photo">
         <img alt="Not Loaded" src={imgUrl} />
       </div>
-      <Like likes={likes} setLikes={setLikes} postid={postid} load={load} />
+      <Like likes={likes} setLikes={setLikes} postid={postid} />
       {renderedComments}
-      <Comment url={commentsUrl} setComments={setComments} load={load} />
+      <Comment url={commentsUrl} setComments={setComments} />
     </div>
   );
 }

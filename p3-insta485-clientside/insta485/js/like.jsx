@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-export default function Like({ likes, setLikes, postid, load }) {
+export default function Like({ likes, setLikes, postid }) {
   function handleLike() {
     // Call REST API to post Like
     fetch(likes.url, { credentials: "same-origin", method: "POST" })
@@ -60,10 +60,6 @@ export default function Like({ likes, setLikes, postid, load }) {
     );
   }
 
-  if (!load) {
-    return <div>{content}</div>;
-  }
-
   return (
     <div>
       {button}
@@ -80,5 +76,4 @@ Like.propTypes = {
   }).isRequired,
   setLikes: PropTypes.func.isRequired,
   postid: PropTypes.number.isRequired,
-  load: PropTypes.bool.isRequired,
 };
