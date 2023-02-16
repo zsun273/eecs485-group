@@ -63,7 +63,7 @@ body{
 }
 
 .post{
-    width: 100%;
+    width: 97%;
     height: auto;
     border: 1px solid #dfdfdf;
     border-radius: 5px;
@@ -120,4 +120,8 @@ body{
 
 .comment-text{
     padding: 5px;
+}
+
+.scroll{
+    width: 100%;
 }

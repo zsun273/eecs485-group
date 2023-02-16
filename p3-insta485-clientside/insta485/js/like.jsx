@@ -1,39 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-export default function Like({ likes, setLikes, postid, load }) {
-  function handleLike() {
-    // Call REST API to post Like
-    fetch(likes.url, { credentials: "same-origin", method: "POST" })
-      .then((response) => {
-        if (!response.ok) throw Error(response.statusText);
-        return response.json();
-      })
-      .then((data) => {
-        setLikes((prevState) => ({
-          lognameLikesThis: true,
-          numLikes: prevState.numLikes + 1,
-          url: data.url,
-        }));
-        console.log(data);
-      })
-      .catch((error) => console.log(error));
-  }
-
-  function handleUnlike() {
-    // Call REST API to delete Like
-    fetch(likes.url, { credentials: "same-origin", method: "DELETE" })
-      .then((response) => {
-        if (!response.ok) throw Error(response.statusText);
-        setLikes((prevState) => ({
-          lognameLikesThis: false,
-          numLikes: prevState.numLikes - 1,
-          url: `/api/v1/likes/?postid=${postid}`,
-        }));
-      })
-      .catch((error) => console.log(error));
-  }
-
+export default function Like({ likes, load, handleLike, handleUnlike }) {
   let content;
   if (likes.numLikes === 1) {
     content = <div className="comment">{likes.numLikes} like</div>;
@@ -78,7 +46,7 @@ Like.propTypes = {
     numLikes: PropTypes.number,
     url: PropTypes.string,
   }).isRequired,
-  setLikes: PropTypes.func.isRequired,
-  postid: PropTypes.number.isRequired,
+  handleLike: PropTypes.func.isRequired,
+  handleUnlike: PropTypes.func.isRequired,
   load: PropTypes.bool.isRequired,
 };

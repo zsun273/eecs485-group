@@ -53,7 +53,6 @@ export default function Post({ url, postid }) {
           setPostShowUrl(data.postShowUrl);
           setOwnerShowUrl(data.ownerShowUrl);
           setLoad(true);
-          console.log(data);
         }
       })
       .catch((error) => console.log(error));
@@ -73,6 +72,44 @@ export default function Post({ url, postid }) {
     </div>
   ));
 
+  const handleLike = () => {
+    // Call REST API to post Like
+    fetch(likes.url, { credentials: "same-origin", method: "POST" })
+      .then((response) => {
+        if (!response.ok) throw Error(response.statusText);
+        return response.json();
+      })
+      .then((data) => {
+        setLikes((prevState) => ({
+          lognameLikesThis: true,
+          numLikes: prevState.numLikes + 1,
+          url: data.url,
+        }));
+        console.log(data);
+      })
+      .catch((error) => console.log(error));
+  };
+
+  const handleUnlike = () => {
+    // Call REST API to delete Like
+    fetch(likes.url, { credentials: "same-origin", method: "DELETE" })
+      .then((response) => {
+        if (!response.ok) throw Error(response.statusText);
+        setLikes((prevState) => ({
+          lognameLikesThis: false,
+          numLikes: prevState.numLikes - 1,
+          url: `/api/v1/likes/?postid=${postid}`,
+        }));
+      })
+      .catch((error) => console.log(error));
+  };
+
+  const doubleClick = () => {
+    if (!likes.lognameLikesThis) {
+      handleLike();
+    }
+  };
+
   // Render post
   return (
     <div className="post">
@@ -86,9 +123,14 @@ export default function Post({ url, postid }) {
         </a>
       </div>
       <div className="photo">
-        <img alt="Not Loaded" src={imgUrl} />
+        <img onDoubleClick={doubleClick} alt="Not Loaded" src={imgUrl} />
       </div>
-      <Like likes={likes} setLikes={setLikes} postid={postid} load={load} />
+      <Like
+        likes={likes}
+        handleLike={handleLike}
+        handleUnlike={handleUnlike}
+        load={load}
+      />
       {renderedComments}
       <Comment url={commentsUrl} setComments={setComments} load={load} />
     </div>
