@@ -86,8 +86,8 @@ case $1 in
 
 
   "restart")
-    ./mapreduce stop
-    ./mapreduce start
+    ./bin/mapreduce stop
+    ./bin/mapreduce start
     ;;
 
   *)
