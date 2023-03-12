@@ -1,13 +1,16 @@
 """MapReduce framework Manager node."""
 import os
+import shutil
 import socket
 import tempfile
 import logging
 import json
 import threading
 import time
-
+from collections import deque
+import pathlib
 import click
+
 # import mapreduce.utils
 
 # Configure logging
@@ -39,13 +42,17 @@ class Manager:
 
         self.host, self.port = host, port
         self.workers = []
+        self.job_queue = deque()
+        self.job_id = 0
         self.signals = {"shutdown": False}
 
-        self.udp_thread = threading.Thread(target=self.server_udp)
-        self.udp_thread.start()
+        self.threads = {"udp_thread": threading.Thread(target=self.server_udp),
+                        "job_thread": threading.Thread(target=self.run_job)}
+        self.threads["udp_thread"].start()
+        self.threads["job_thread"].start()
         self.server_tcp()
 
-        self.udp_thread.join()  # for shutdown test
+        self.threads["udp_thread"].join()  # for shutdown test
 
     def server_tcp(self):
         """Wait on a message from a socket OR a shutdown signal."""
@@ -65,7 +72,7 @@ class Manager:
             sock.settimeout(1)
 
             while not self.signals["shutdown"]:
-                print("TCP waiting ...")
+                # print("TCP waiting ...")
 
                 # Wait for a connection for 1s.  The socket library avoids
                 # consuming CPU while waiting for a connection.
@@ -105,7 +112,9 @@ class Manager:
                     message_dict = json.loads(message_str)
                 except json.JSONDecodeError:
                     continue
-                print("TCP msg: ", message_dict)
+
+                LOGGER.debug("TCP recv \n%s",
+                             json.dumps(message_dict, indent=2), )
 
                 # shutdown when receive special shutdown message
                 if message_dict.get('message_type', "") == "shutdown":
@@ -116,8 +125,6 @@ class Manager:
                     print("========== WORKERS ALL SHUTDOWN ===============")
                     self.signals['shutdown'] = True
                 elif message_dict.get('message_type', "") == "register":
-                    LOGGER.debug("TCP recv \n%s",
-                                 json.dumps(message_dict, indent=2), )
                     new_worker = {'worker_host': message_dict['worker_host'],
                                   'worker_port': message_dict['worker_port'],
                                   'state': "ready"}
@@ -131,6 +138,12 @@ class Manager:
                     ack_thread.start()
                     ack_thread.join()
                     print("================= ACK SENT ===============")
+                elif message_dict.get('message_type', "") == "new_manager_job":
+                    message_dict["job_id"] = self.job_id
+                    self.job_id += 1
+                    self.job_queue.append(message_dict)
+                    LOGGER.debug("Current job queue \n%s", self.job_queue, )
+                    time.sleep(1)
 
         print("server TCP shutting down")
 
@@ -148,7 +161,7 @@ class Manager:
 
             # Receive incoming UDP messages
             while not self.signals["shutdown"]:
-                print("UDP waiting ...")
+                # print("UDP waiting ...")
                 try:
                     message_bytes = sock.recv(4096)
                 except socket.timeout:
@@ -195,6 +208,32 @@ class Manager:
             sock.sendall(message.encode('utf-8'))
             LOGGER.debug("TCP send to %s:%s \n%s",
                          host, port, json.dumps(message_dict, indent=2), )
+
+    def run_job(self):
+        """Handle job running."""
+        LOGGER.info("Start job thread")
+        while not self.signals["shutdown"]:
+            if self.job_queue:
+                # have job to run and no job running currently
+                print("Detect new job")
+                job = self.job_queue.popleft()
+                job_id = job["job_id"]
+
+                output_dir = pathlib.Path(job["output_directory"])
+                if pathlib.Path.exists(output_dir):
+                    shutil.rmtree(output_dir)
+                output_dir.mkdir()
+                LOGGER.info("Created output_dir %s", output_dir)
+
+                prefix = f"mapreduce-shared-job{job_id:05d}-"
+                with tempfile.TemporaryDirectory(prefix=prefix) as tmpdir:
+                    LOGGER.info("Created tmpdir %s", tmpdir)
+                    # FIXME: Change this loop so that
+                    # it runs either until shutdown
+                    # or when the job is completed.
+                    while not self.signals["shutdown"]:
+                        time.sleep(0.1)
+                LOGGER.info("Cleaned up tmpdir %s", tmpdir)
 
 
 @click.command()

@@ -4,6 +4,7 @@ import logging
 import json
 import socket
 import threading
+import time
 from threading import Lock
 import click
 # import mapreduce.utils
@@ -31,6 +32,8 @@ class Worker:
         self.manager_port = manager_port
         self.signals = {"shutdown": False}
 
+        self.udp_thread = threading.Thread(
+            target=self.worker_udp)
         self.worker_tcp()
         # registration(host, port, manager_host, manager_port)
 
@@ -53,11 +56,10 @@ class Worker:
             while not self.signals["shutdown"]:
                 # print("worker TCP waiting ...")
 
-                L.acquire()
-                if not registered:
-                    self.registration()
-                    registered = True
-                L.release()
+                with L:
+                    if not registered:
+                        self.registration()
+                        registered = True
 
                 # Wait for a connection for 1s.  The socket library avoids
                 # consuming CPU while waiting for a connection.
@@ -88,21 +90,18 @@ class Worker:
                     message_dict = json.loads(message_str)
                 except json.JSONDecodeError:
                     continue
-                # print("worker TCP msg: ", message_dict)
+                LOGGER.debug("TCP recv \n%s",
+                             json.dumps(message_dict, indent=2), )
 
                 # shutdown when receive special shutdown message
                 if message_dict.get('message_type', "") == "shutdown":
                     self.signals['shutdown'] = True
                 elif message_dict.get('message_type', "") == "register_ack":
-                    LOGGER.debug("TCP recv \n%s",
-                                 json.dumps(message_dict, indent=2), )
-                    udp_thread = threading.Thread(
-                        target=self.worker_udp)
-                    udp_thread.start()
+                    self.udp_thread.start()
                     udp_running = True
 
         if udp_running:
-            udp_thread.join()
+            self.udp_thread.join()
 
         print("worker TCP shutting down")
 
@@ -130,17 +129,21 @@ class Worker:
             )
 
     def worker_udp(self):
-        """Send heartbeat or wait for a shutdown signal."""
-        # while not self.signals["shutdown"]:
-        # Create an INET, DGRAM socket, this is UDP
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            # Connect to the UDP socket on server
-            sock.connect((self.manager_host, self.manager_port))
+        """Send heartbeat every 2 sec or wait for a shutdown signal."""
+        while not self.signals["shutdown"]:
+            # Create an INET, DGRAM socket, this is UDP
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                # Connect to the UDP socket on server
+                sock.connect((self.manager_host, self.manager_port))
 
-            # Send a message
-            message = json.dumps({"message_type": "heartbeat"})
-            sock.sendall(message.encode('utf-8'))
-            # time.sleep(10)
+                # Send a message
+                message = json.dumps({"message_type": "heartbeat",
+                                      "worker_host": self.host,
+                                      "worker_port": self.port})
+                sock.sendall(message.encode('utf-8'))
+                LOGGER.debug("UDP send heartbeat to %s:%s",
+                             self.manager_host, self.manager_port,)
+                time.sleep(2)
 
         print("worker UDP shutting down")
 
