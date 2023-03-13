@@ -7,7 +7,7 @@ import threading
 import time
 from threading import Lock
 import click
-# import mapreduce.utils
+from mapreduce import utils
 
 # Configure logging
 LOGGER = logging.getLogger(__name__)
@@ -35,7 +35,6 @@ class Worker:
         self.udp_thread = threading.Thread(
             target=self.worker_udp)
         self.worker_tcp()
-        # registration(host, port, manager_host, manager_port)
 
     def worker_tcp(self):
         """Wait on a message from a socket OR a shutdown signal."""
@@ -69,36 +68,18 @@ class Worker:
                     continue
                 print("Connection from", address[0])
 
-                clientsocket.settimeout(1)
-
-                with clientsocket:
-                    message_chunks = []
-                    while True:
-                        try:
-                            data = clientsocket.recv(4096)
-                        except socket.timeout:
-                            continue
-                        if not data:
-                            break
-                        message_chunks.append(data)
-
-                # Decode list-of-byte-strings to UTF8 and parse JSON data
-                message_bytes = b''.join(message_chunks)
-                message_str = message_bytes.decode("utf-8")
-
                 try:
-                    message_dict = json.loads(message_str)
+                    message_dict = utils.recv_tcp_message(clientsocket)
                 except json.JSONDecodeError:
                     continue
-                LOGGER.debug("TCP recv \n%s",
+                LOGGER.debug("Worker TCP recv \n%s",
                              json.dumps(message_dict, indent=2), )
 
-                # shutdown when receive special shutdown message
-                if message_dict.get('message_type', "") == "shutdown":
-                    self.signals['shutdown'] = True
-                elif message_dict.get('message_type', "") == "register_ack":
+                if message_dict.get('message_type', "") == "register_ack":
                     self.udp_thread.start()
                     udp_running = True
+                elif message_dict.get('message_type', "") == "shutdown":
+                    self.signals['shutdown'] = True
 
         if udp_running:
             self.udp_thread.join()
@@ -107,26 +88,20 @@ class Worker:
 
     def registration(self):
         """Send registration message to Manager."""
-        # Create an INET, STREAMing socket, this is TCP
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            # connect to the server
-            sock.connect((self.manager_host, self.manager_port))
-
-            # send a message
-            message_dict = {
-                "message_type": "register",
-                "worker_host": self.host,
-                "worker_port": self.port,
-            }
-            message = json.dumps(message_dict)
-            sock.sendall(message.encode('utf-8'))
-            LOGGER.debug("TCP send to %s:%s \n%s",
-                         self.manager_host, self.manager_port,
-                         json.dumps(message_dict, indent=2), )
-            LOGGER.info(
-                "Sent connection request to Manager %s:%s",
-                self.manager_host, self.manager_port,
-            )
+        message_dict = {
+            "message_type": "register",
+            "worker_host": self.host,
+            "worker_port": self.port,
+        }
+        utils.send_tcp_message(self.manager_host,
+                               self.manager_port, message_dict)
+        LOGGER.debug("TCP send to %s:%s \n%s",
+                     self.manager_host, self.manager_port,
+                     json.dumps(message_dict, indent=2), )
+        LOGGER.info(
+            "Sent connection request to Manager %s:%s",
+            self.manager_host, self.manager_port,
+        )
 
     def worker_udp(self):
         """Send heartbeat every 2 sec or wait for a shutdown signal."""

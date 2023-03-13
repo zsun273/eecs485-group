@@ -11,7 +11,7 @@ from collections import deque
 import pathlib
 import click
 
-# import mapreduce.utils
+from mapreduce import utils
 
 # Configure logging
 LOGGER = logging.getLogger(__name__)
@@ -32,14 +32,6 @@ class Manager:
             os.getcwd(),
         )
 
-        # This is a fake message to demonstrate pretty printing with logging
-        # message_dict = {
-        #     "message_type": "register",
-        #     "worker_host": "localhost",
-        #     "worker_port": 6001,
-        # }
-        # LOGGER.debug("TCP recv\n%s", json.dumps(message_dict, indent=2))
-
         self.host, self.port = host, port
         self.workers = []
         self.job_queue = deque()
@@ -47,7 +39,10 @@ class Manager:
         self.signals = {"shutdown": False}
 
         self.threads = {"udp_thread": threading.Thread(target=self.server_udp),
-                        "job_thread": threading.Thread(target=self.run_job)}
+                        "job_thread": threading.Thread(target=self.run_job),
+                        "fault_fix": threading.Thread(
+                            target=self.check_heartbeat)}
+
         self.threads["udp_thread"].start()
         self.threads["job_thread"].start()
         self.server_tcp()
@@ -73,47 +68,17 @@ class Manager:
 
             while not self.signals["shutdown"]:
                 # print("TCP waiting ...")
-
-                # Wait for a connection for 1s.  The socket library avoids
-                # consuming CPU while waiting for a connection.
                 try:
-                    clientsocket, address = sock.accept()
+                    clientsocket, _ = sock.accept()
                 except socket.timeout:
                     continue
-                print("Connection from", address[0])
-
-                # Socket recv() will block for a maximum of 1 second.
-                # If you omit this, it blocks indefinitely,
-                # waiting for packets.
-                clientsocket.settimeout(1)
-
-                # Receive data, one chunk at a time.  If recv() times out
-                # before we can read a chunk, then go back to the top of
-                # the loop and try again.  When the client closes the
-                # connection, recv() returns empty data, which breaks out
-                # of the loop.  We make a simplifying assumption that the
-                # client will always cleanly close the connection.
-                with clientsocket:
-                    message_chunks = []
-                    while True:
-                        try:
-                            data = clientsocket.recv(4096)
-                        except socket.timeout:
-                            continue
-                        if not data:
-                            break
-                        message_chunks.append(data)
-
-                # Decode list-of-byte-strings to UTF8 and parse JSON data
-                message_bytes = b''.join(message_chunks)
-                message_str = message_bytes.decode("utf-8")
 
                 try:
-                    message_dict = json.loads(message_str)
+                    message_dict = utils.recv_tcp_message(clientsocket)
                 except json.JSONDecodeError:
                     continue
 
-                LOGGER.debug("TCP recv \n%s",
+                LOGGER.debug("Manager TCP recv \n%s",
                              json.dumps(message_dict, indent=2), )
 
                 # shutdown when receive special shutdown message
@@ -142,7 +107,9 @@ class Manager:
                     message_dict["job_id"] = self.job_id
                     self.job_id += 1
                     self.job_queue.append(message_dict)
-                    LOGGER.debug("Current job queue \n%s", self.job_queue, )
+                    for job in self.job_queue:
+                        LOGGER.debug("Job ID %s \n%s", job["job_id"],
+                                     json.dumps(job, indent=2), )
                     time.sleep(1)
 
         print("server TCP shutting down")
@@ -182,46 +149,38 @@ class Manager:
         """Shut down workers."""
         for worker in self.workers:
             if worker['state'] != "dead":
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                    host, port = worker['worker_host'], worker['worker_port']
-                    # connect to the worker
-                    sock.connect((host, port))
-
-                    message_dict = {"message_type": "shutdown"}
-                    # send shutdown message
-                    message = json.dumps(message_dict)
-                    sock.sendall(message.encode('utf-8'))
+                host, port = worker['worker_host'], worker['worker_port']
+                message_dict = {"message_type": "shutdown"}
+                utils.send_tcp_message(host, port, message_dict)
+                LOGGER.debug("TCP send to %s:%s \n%s",
+                             host, port, json.dumps(message_dict, indent=2), )
 
     def ack(self, host, port):
         """Send ACK message back to workers."""
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            # connect to the worker
-            sock.connect((host, port))
-
-            message_dict = {
-                "message_type": "register_ack",
-                "worker_host": host,
-                "worker_port": port,
-            }
-            # send a message
-            message = json.dumps(message_dict)
-            sock.sendall(message.encode('utf-8'))
-            LOGGER.debug("TCP send to %s:%s \n%s",
-                         host, port, json.dumps(message_dict, indent=2), )
+        message_dict = {
+            "message_type": "register_ack",
+            "worker_host": host,
+            "worker_port": port,
+        }
+        utils.send_tcp_message(host, port, message_dict)
+        LOGGER.debug("TCP send to %s:%s \n%s",
+                     host, port, json.dumps(message_dict, indent=2), )
 
     def run_job(self):
         """Handle job running."""
         LOGGER.info("Start job thread")
         while not self.signals["shutdown"]:
             if self.job_queue:
-                # have job to run and no job running currently
-                print("Detect new job")
+                # have new job to run
+                print("Detect new job.")
                 job = self.job_queue.popleft()
                 job_id = job["job_id"]
 
                 output_dir = pathlib.Path(job["output_directory"])
                 if pathlib.Path.exists(output_dir):
+                    # remove existing output dir
                     shutil.rmtree(output_dir)
+
                 output_dir.mkdir()
                 LOGGER.info("Created output_dir %s", output_dir)
 
@@ -234,6 +193,10 @@ class Manager:
                     while not self.signals["shutdown"]:
                         time.sleep(0.1)
                 LOGGER.info("Cleaned up tmpdir %s", tmpdir)
+
+    def check_heartbeat(self):
+        """Check heartbeat and do fault tolerance."""
+        print("check heartbeat")
 
 
 @click.command()
