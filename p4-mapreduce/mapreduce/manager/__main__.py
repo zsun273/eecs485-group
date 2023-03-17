@@ -33,10 +33,11 @@ class Manager:
         )
 
         self.host, self.port = host, port
-        self.workers = []
+        self.workers = {}
+        self.register_order = []    # index->order
         self.job_queue = deque()
-        self.job_id = 0
-        self.signals = {"shutdown": False}
+        # self.job_id = 0
+        self.signals = {"shutdown": False, "job_id": 0, "job_done": True}
 
         self.threads = {"udp_thread": threading.Thread(target=self.server_udp),
                         "job_thread": threading.Thread(target=self.run_job),
@@ -45,6 +46,7 @@ class Manager:
 
         self.threads["udp_thread"].start()
         self.threads["job_thread"].start()
+        self.threads["fault_fix"].start()
         self.server_tcp()
 
         self.threads["udp_thread"].join()  # for shutdown test
@@ -90,11 +92,11 @@ class Manager:
                     print("========== WORKERS ALL SHUTDOWN ===============")
                     self.signals['shutdown'] = True
                 elif message_dict.get('message_type', "") == "register":
-                    new_worker = {'worker_host': message_dict['worker_host'],
-                                  'worker_port': message_dict['worker_port'],
-                                  'state': "ready"}
-                    self.workers.append(new_worker)
-
+                    self.workers[(message_dict['worker_host'],
+                                  message_dict['worker_port'])] \
+                        = {'state': "ready", 'missed_heartbeat': 0}
+                    self.register_order.append((message_dict['worker_host'],
+                                                message_dict['worker_port']))
                     # send back ACK
                     ack_thread = threading.Thread(
                         target=self.ack,
@@ -104,8 +106,8 @@ class Manager:
                     ack_thread.join()
                     print("================= ACK SENT ===============")
                 elif message_dict.get('message_type', "") == "new_manager_job":
-                    message_dict["job_id"] = self.job_id
-                    self.job_id += 1
+                    message_dict["job_id"] = self.signals["job_id"]
+                    self.signals["job_id"] += 1
                     self.job_queue.append(message_dict)
                     for job in self.job_queue:
                         LOGGER.debug("Job ID %s \n%s", job["job_id"],
@@ -140,6 +142,13 @@ class Manager:
                 except json.JSONDecodeError:
                     continue
 
+                if message_dict.get('message_type', "") == "heartbeat":
+                    # recv a heartbeat, update worker
+                    host, port = message_dict['worker_host'], \
+                                 message_dict['worker_port']
+                    if (host, port) in self.workers:
+                        # ignore heartbeat before worker registration
+                        self.workers[(host, port)]['missed_heartbeat'] = 0
                 LOGGER.debug("UDP recv \n%s",
                              json.dumps(message_dict, indent=2), )
 
@@ -147,13 +156,12 @@ class Manager:
 
     def shut_workers(self):
         """Shut down workers."""
-        for worker in self.workers:
-            if worker['state'] != "dead":
-                host, port = worker['worker_host'], worker['worker_port']
-                message_dict = {"message_type": "shutdown"}
-                utils.send_tcp_message(host, port, message_dict)
-                LOGGER.debug("TCP send to %s:%s \n%s",
-                             host, port, json.dumps(message_dict, indent=2), )
+        for host, port in self.workers:
+            # if self.workers[(host, port)]['state'] != "dead":
+            message_dict = {"message_type": "shutdown"}
+            utils.send_tcp_message(host, port, message_dict)
+            LOGGER.debug("TCP send to %s:%s \n%s",
+                         host, port, json.dumps(message_dict, indent=2), )
 
     def ack(self, host, port):
         """Send ACK message back to workers."""
@@ -184,19 +192,62 @@ class Manager:
                 output_dir.mkdir()
                 LOGGER.info("Created output_dir %s", output_dir)
 
+                # partition
+                input_dir = pathlib.Path(job["input_directory"])
+                files = []
+                for filename in input_dir.iterdir():
+                    files.append(str(filename))
+                print(files)
+
+                tasks = {}
+                for i, filename in enumerate(files):
+                    task_id = i % job["num_mappers"]
+                    if task_id not in tasks:
+                        tasks[task_id] = [filename]
+                    else:
+                        tasks[task_id].append(filename)
+
                 prefix = f"mapreduce-shared-job{job_id:05d}-"
                 with tempfile.TemporaryDirectory(prefix=prefix) as tmpdir:
                     LOGGER.info("Created tmpdir %s", tmpdir)
-                    # FIXME: Change this loop so that
-                    # it runs either until shutdown
-                    # or when the job is completed.
-                    while not self.signals["shutdown"]:
+
+                    self.signals["job_done"] = False
+                    while not self.signals["shutdown"] \
+                            and not self.signals["job_done"]:
                         time.sleep(0.1)
+                        # allocate tasks to workers
+                        num_tasks = len(tasks)
+                        for task_id in range(num_tasks):
+                            print(self.register_order)
+                            if task_id >= len(self.register_order):
+                                break
+                            host, port = self.register_order[task_id]
+                            message_dict = {
+                                  "message_type": "new_map_task",
+                                  "task_id": task_id,
+                                  "input_paths": tasks[task_id],
+                                  "executable": job["mapper_executable"],
+                                  "output_directory": str(output_dir),
+                                  "num_partitions": job["num_reducers"],
+                                  "worker_host": host,
+                                  "worker_port": port
+                            }
+                            utils.send_tcp_message(host, port, message_dict)
+                        # self.signals["job_done"] = True
+
                 LOGGER.info("Cleaned up tmpdir %s", tmpdir)
 
     def check_heartbeat(self):
         """Check heartbeat and do fault tolerance."""
         print("check heartbeat")
+        while not self.signals['shutdown']:
+            for host, port in self.workers:
+                self.workers[(host, port)]['missed_heartbeat'] += 1
+                if self.workers[(host, port)]['missed_heartbeat'] == 5:
+                    self.workers[(host, port)]['state'] = "dead"
+                    print(f"Worker {host}:{port} died")
+            # check status every two seconds
+            time.sleep(2)
 
 
 @click.command()
