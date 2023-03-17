@@ -1,8 +1,13 @@
 """MapReduce framework Worker node."""
+import hashlib
 import os
 import logging
 import json
+import pathlib
+import shutil
 import socket
+import subprocess
+import tempfile
 import threading
 import time
 from threading import Lock
@@ -12,6 +17,51 @@ from mapreduce import utils
 # Configure logging
 LOGGER = logging.getLogger(__name__)
 L = Lock()
+
+
+def worker_map(executable, input_path, num_partitions,
+               output, task_id):
+    """Map job."""
+    with tempfile.TemporaryDirectory(
+            prefix=f"mapreduce-local-task{task_id:05d}-") as tmpdir:
+        LOGGER.info("Created tmpdir %s", tmpdir)
+        for filename in input_path:
+            with open(filename, encoding="utf-8") as infile:
+                with subprocess.Popen(
+                        [executable],
+                        stdin=infile,
+                        stdout=subprocess.PIPE,
+                        text=True,
+                ) as map_process:
+                    LOGGER.info("Executed %s", executable)
+                    for line in map_process.stdout:
+                        # Add line to correct partition output file
+                        key = line.split("\t")[0]
+                        partition_number = int(hashlib.
+                                               md5(key.encode("utf-8")).
+                                               hexdigest(),
+                                               base=16) % num_partitions
+                        output_file = pathlib.PurePath(
+                            tmpdir, f"maptask{task_id:05d}-part"
+                                    f"{partition_number:05d}")
+                        with open(output_file, 'a', encoding="utf-8") as file:
+                            file.write(line)
+
+                    LOGGER.info("Write to %s", str(output_file))
+        # sort lines and
+        # move files to managers tmp folder
+        for filename in os.listdir(pathlib.Path(tmpdir)):
+            with open(pathlib.Path(tmpdir, filename), 'r',
+                      encoding="utf-8") as file:
+                lines = sorted(file.readlines())
+            with open(pathlib.Path(tmpdir, filename), 'w',
+                      encoding="utf-8") as file:
+                for line in lines:
+                    file.write(line)
+            LOGGER.info("Sorted %s", filename)
+            shutil.move(pathlib.Path(tmpdir, filename),
+                        pathlib.Path(output, filename))
+            LOGGER.info("Moved %s", filename)
 
 
 class Worker:
@@ -80,6 +130,25 @@ class Worker:
                     udp_running = True
                 elif message_dict.get('message_type', "") == "shutdown":
                     self.signals['shutdown'] = True
+                elif message_dict.get('message_type', "") == "new_map_task":
+                    task_id = message_dict["task_id"]
+                    # do mapping here
+                    map_thread = threading.Thread(
+                        target=worker_map,
+                        args=(message_dict["executable"],
+                              message_dict["input_paths"],
+                              message_dict["num_partitions"],
+                              message_dict["output_directory"],
+                              task_id))
+                    map_thread.start()
+
+                    map_thread.join()
+                    utils.send_tcp_message(self.manager_host,
+                                           self.manager_port,
+                                           {"message_type": "finished",
+                                            "task_id": message_dict["task_id"],
+                                            "worker_host": self.host,
+                                            "worker_port": self.port})
 
         if udp_running:
             self.udp_thread.join()
@@ -117,7 +186,7 @@ class Worker:
                                       "worker_port": self.port})
                 sock.sendall(message.encode('utf-8'))
                 LOGGER.debug("UDP send heartbeat to %s:%s",
-                             self.manager_host, self.manager_port,)
+                             self.manager_host, self.manager_port, )
                 time.sleep(2)
 
         print("worker UDP shutting down")

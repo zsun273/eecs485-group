@@ -1,4 +1,5 @@
 """MapReduce framework Manager node."""
+import heapq
 import os
 import shutil
 import socket
@@ -33,11 +34,12 @@ class Manager:
         )
 
         self.host, self.port = host, port
-        self.workers = {}
-        self.register_order = []    # index->order
+        self.workers = {}  # state: ready=0, busy=1, dead=2
+        self.register_order = []  # (state, order, host, port)
         self.job_queue = deque()
         # self.job_id = 0
-        self.signals = {"shutdown": False, "job_id": 0, "job_done": True}
+        self.signals = {"shutdown": False, "job_id": 0, "job_done": True,
+                        "finished_task": []}
 
         self.threads = {"udp_thread": threading.Thread(target=self.server_udp),
                         "job_thread": threading.Thread(target=self.run_job),
@@ -94,9 +96,11 @@ class Manager:
                 elif message_dict.get('message_type', "") == "register":
                     self.workers[(message_dict['worker_host'],
                                   message_dict['worker_port'])] \
-                        = {'state': "ready", 'missed_heartbeat': 0}
-                    self.register_order.append((message_dict['worker_host'],
-                                                message_dict['worker_port']))
+                        = {'state': 0, 'missed_heartbeat': 0}
+                    heapq.heappush(self.register_order,
+                                   [0, len(self.register_order),
+                                    message_dict['worker_host'],
+                                    message_dict['worker_port']])
                     # send back ACK
                     ack_thread = threading.Thread(
                         target=self.ack,
@@ -109,10 +113,25 @@ class Manager:
                     message_dict["job_id"] = self.signals["job_id"]
                     self.signals["job_id"] += 1
                     self.job_queue.append(message_dict)
-                    for job in self.job_queue:
-                        LOGGER.debug("Job ID %s \n%s", job["job_id"],
-                                     json.dumps(job, indent=2), )
+                    # for job in self.job_queue:
+                    #     LOGGER.debug("Job ID %s \n%s", job["job_id"],
+                    #                  json.dumps(job, indent=2), )
                     time.sleep(1)
+                elif message_dict.get('message_type', "") == "finished":
+                    num_workers = len(self.register_order)
+                    for i in range(num_workers):
+                        if self.register_order[i][2] == \
+                                message_dict["worker_host"] \
+                                and self.register_order[i][3] == \
+                                message_dict["worker_port"]:
+                            self.register_order[i][0] = 0  # busy -> ready
+                            self.workers[
+                                (message_dict["worker_host"],
+                                 message_dict["worker_port"])]["state"] = 0
+                            heapq.heapify(self.register_order)
+                            break
+                    self.signals["finished_task"].append(
+                        message_dict["task_id"])
 
         print("server TCP shutting down")
 
@@ -157,7 +176,7 @@ class Manager:
     def shut_workers(self):
         """Shut down workers."""
         for host, port in self.workers:
-            # if self.workers[(host, port)]['state'] != "dead":
+            # if self.workers[(host, port)]['state'] != 2:
             message_dict = {"message_type": "shutdown"}
             utils.send_tcp_message(host, port, message_dict)
             LOGGER.debug("TCP send to %s:%s \n%s",
@@ -184,67 +203,80 @@ class Manager:
                 job = self.job_queue.popleft()
                 job_id = job["job_id"]
 
-                output_dir = pathlib.Path(job["output_directory"])
-                if pathlib.Path.exists(output_dir):
-                    # remove existing output dir
-                    shutil.rmtree(output_dir)
-
-                output_dir.mkdir()
-                LOGGER.info("Created output_dir %s", output_dir)
-
-                # partition
-                input_dir = pathlib.Path(job["input_directory"])
-                files = []
-                for filename in input_dir.iterdir():
-                    files.append(str(filename))
-                print(files)
-
-                tasks = {}
-                for i, filename in enumerate(files):
-                    task_id = i % job["num_mappers"]
-                    if task_id not in tasks:
-                        tasks[task_id] = [filename]
-                    else:
-                        tasks[task_id].append(filename)
-
                 prefix = f"mapreduce-shared-job{job_id:05d}-"
                 with tempfile.TemporaryDirectory(prefix=prefix) as tmpdir:
                     LOGGER.info("Created tmpdir %s", tmpdir)
 
+                    output_dir = pathlib.Path(job["output_directory"])
+                    if pathlib.Path.exists(output_dir):
+                        # remove existing output dir
+                        shutil.rmtree(output_dir)
+
+                    output_dir.mkdir()
+                    LOGGER.info("Created output_dir %s", output_dir)
+
+                    # partition
+                    input_dir = pathlib.Path(job["input_directory"])
+                    files = []
+                    for filename in input_dir.iterdir():
+                        files.append(str(filename))
+                    print(files)
+
+                    tasks = {}
+                    for i, filename in enumerate(files):
+                        task_id = i % job["num_mappers"]
+                        if task_id not in tasks:
+                            tasks[task_id] = [filename]
+                        else:
+                            tasks[task_id].append(filename)
+
+                    task_id = 0
                     self.signals["job_done"] = False
                     while not self.signals["shutdown"] \
-                            and not self.signals["job_done"]:
-                        time.sleep(0.1)
+                            and task_id < len(tasks):
+                        LOGGER.info("Current task id %s", task_id)
+                        LOGGER.info("Current workers %s", self.register_order)
+                        time.sleep(1)
                         # allocate tasks to workers
-                        num_tasks = len(tasks)
-                        for task_id in range(num_tasks):
-                            print(self.register_order)
-                            if task_id >= len(self.register_order):
-                                break
-                            host, port = self.register_order[task_id]
+                        if not self.register_order:
+                            continue
+                        if self.register_order[0][0] == 0:
+                            host = self.register_order[0][2]
+                            port = self.register_order[0][3]
                             message_dict = {
-                                  "message_type": "new_map_task",
-                                  "task_id": task_id,
-                                  "input_paths": tasks[task_id],
-                                  "executable": job["mapper_executable"],
-                                  "output_directory": str(output_dir),
-                                  "num_partitions": job["num_reducers"],
-                                  "worker_host": host,
-                                  "worker_port": port
+                                "message_type": "new_map_task",
+                                "task_id": task_id,
+                                "input_paths": tasks[task_id],
+                                "executable": job["mapper_executable"],
+                                "output_directory": str(tmpdir),
+                                "num_partitions": job["num_reducers"],
+                                "worker_host": host,
+                                "worker_port": port
                             }
-                            utils.send_tcp_message(host, port, message_dict)
-                        # self.signals["job_done"] = True
+                            self.register_order[0][0] = 1  # ready -> busy
+                            heapq.heapify(self.register_order)  # reorder
+                            utils.send_tcp_message(host, port,
+                                                   message_dict)
 
+                            task_id += 1
+                    LOGGER.info("Task Allocation Done")
+                    # check job done
+                    while not self.signals["shutdown"] and \
+                            len(self.signals["finished_task"]) != len(tasks):
+                        time.sleep(0.2)  # wait for all tasks to be finished
+
+                LOGGER.info("Current job done. Move to next job.")
+                self.signals["finished_task"].clear()
                 LOGGER.info("Cleaned up tmpdir %s", tmpdir)
 
     def check_heartbeat(self):
         """Check heartbeat and do fault tolerance."""
-        print("check heartbeat")
+        LOGGER.info("Fault tolerance thread starts.")
         while not self.signals['shutdown']:
             for host, port in self.workers:
                 self.workers[(host, port)]['missed_heartbeat'] += 1
                 if self.workers[(host, port)]['missed_heartbeat'] == 5:
-                    self.workers[(host, port)]['state'] = "dead"
+                    self.workers[(host, port)]['state'] = 2
                     print(f"Worker {host}:{port} died")
             # check status every two seconds
             time.sleep(2)
