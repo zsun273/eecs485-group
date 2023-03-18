@@ -38,8 +38,7 @@ class Manager:
         self.register_order = []  # (state, order, host, port)
         self.job_queue = deque()
         # self.job_id = 0
-        self.signals = {"shutdown": False, "job_id": 0, "job_done": True,
-                        "finished_task": []}
+        self.signals = {"shutdown": False, "job_id": 0, "finished_task": []}
 
         self.threads = {"udp_thread": threading.Thread(target=self.server_udp),
                         "job_thread": threading.Thread(target=self.run_job),
@@ -52,6 +51,8 @@ class Manager:
         self.server_tcp()
 
         self.threads["udp_thread"].join()  # for shutdown test
+        self.threads["job_thread"].join()
+        self.threads["fault_fix"].join()
 
     def server_tcp(self):
         """Wait on a message from a socket OR a shutdown signal."""
@@ -113,9 +114,6 @@ class Manager:
                     message_dict["job_id"] = self.signals["job_id"]
                     self.signals["job_id"] += 1
                     self.job_queue.append(message_dict)
-                    # for job in self.job_queue:
-                    #     LOGGER.debug("Job ID %s \n%s", job["job_id"],
-                    #                  json.dumps(job, indent=2), )
                     time.sleep(1)
                 elif message_dict.get('message_type', "") == "finished":
                     num_workers = len(self.register_order)
@@ -149,7 +147,6 @@ class Manager:
 
             # Receive incoming UDP messages
             while not self.signals["shutdown"]:
-                # print("UDP waiting ...")
                 try:
                     message_bytes = sock.recv(4096)
                 except socket.timeout:
@@ -203,46 +200,47 @@ class Manager:
                 job = self.job_queue.popleft()
                 job_id = job["job_id"]
 
+                output_dir = pathlib.Path(job["output_directory"])
+                if pathlib.Path.exists(output_dir):
+                    # remove existing output dir
+                    shutil.rmtree(output_dir)
+
+                output_dir.mkdir()
+                LOGGER.info("Created output_dir %s", output_dir)
+
+                # partition
+                input_dir = pathlib.Path(job["input_directory"])
+                files = []
+                for filename in input_dir.iterdir():
+                    files.append(str(filename))
+                files.sort()
+                print(files)
+
+                tasks = {}
+                for i, filename in enumerate(files):
+                    task_id = i % job["num_mappers"]
+                    if task_id not in tasks:
+                        tasks[task_id] = [filename]
+                    else:
+                        tasks[task_id].append(filename)
+
                 prefix = f"mapreduce-shared-job{job_id:05d}-"
                 with tempfile.TemporaryDirectory(prefix=prefix) as tmpdir:
                     LOGGER.info("Created tmpdir %s", tmpdir)
 
-                    output_dir = pathlib.Path(job["output_directory"])
-                    if pathlib.Path.exists(output_dir):
-                        # remove existing output dir
-                        shutil.rmtree(output_dir)
-
-                    output_dir.mkdir()
-                    LOGGER.info("Created output_dir %s", output_dir)
-
-                    # partition
-                    input_dir = pathlib.Path(job["input_directory"])
-                    files = []
-                    for filename in input_dir.iterdir():
-                        files.append(str(filename))
-                    print(files)
-
-                    tasks = {}
-                    for i, filename in enumerate(files):
-                        task_id = i % job["num_mappers"]
-                        if task_id not in tasks:
-                            tasks[task_id] = [filename]
-                        else:
-                            tasks[task_id].append(filename)
-
                     task_id = 0
-                    self.signals["job_done"] = False
                     while not self.signals["shutdown"] \
                             and task_id < len(tasks):
+                        time.sleep(0.1)
                         LOGGER.info("Current task id %s", task_id)
                         LOGGER.info("Current workers %s", self.register_order)
-                        time.sleep(1)
                         # allocate tasks to workers
                         if not self.register_order:
                             continue
                         if self.register_order[0][0] == 0:
                             host = self.register_order[0][2]
                             port = self.register_order[0][3]
+                            LOGGER.info("SEND TASK TO worker %s", port)
                             message_dict = {
                                 "message_type": "new_map_task",
                                 "task_id": task_id,
@@ -257,7 +255,6 @@ class Manager:
                             heapq.heapify(self.register_order)  # reorder
                             utils.send_tcp_message(host, port,
                                                    message_dict)
-
                             task_id += 1
                     LOGGER.info("Task Allocation Done")
                     # check job done
