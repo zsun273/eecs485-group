@@ -121,7 +121,6 @@ class Manager:
                     message_dict["job_id"] = self.signals["job_id"]
                     self.signals["job_id"] += 1
                     self.job_queue.append(message_dict)
-                    time.sleep(1)
                 elif message_dict.get('message_type', "") == "finished":
                     num_workers = len(self.register_order)
                     for i in range(num_workers):
@@ -300,34 +299,33 @@ class Manager:
         # check job done
         while not self.signals["shutdown"] and \
                 len(self.signals["finished_task"]) != len(tasks):
-            while self.dead_task:
-                # allocate dead tasks to workers
-                if self.register_order[0][0] == 0:
-                    task_id = self.dead_task.popleft()
-                    LOGGER.info("Current dead task id %s", task_id)
-                    LOGGER.info("Current workers %s", self.register_order)
-                    host = self.register_order[0][2]
-                    port = self.register_order[0][3]
-                    LOGGER.info("SEND DEAD TASK TO worker %s", port)
-                    message_dict = {
-                        "message_type": "new_map_task",
-                        "task_id": task_id,
-                        "input_paths": tasks[task_id],
-                        "executable": job["mapper_executable"],
-                        "output_directory": str(tmpdir),
-                        "num_partitions": job["num_reducers"],
-                        "worker_host": host,
-                        "worker_port": port
-                    }
+            time.sleep(0.1)  # wait for all tasks to be finished
+            if self.dead_task and self.register_order[0][0] == 0:
+                task_id = self.dead_task.popleft()
+                LOGGER.info("Current dead task id %s", task_id)
+                LOGGER.info("Current workers %s", self.register_order)
+                host = self.register_order[0][2]
+                port = self.register_order[0][3]
+                LOGGER.info("SEND DEAD TASK TO worker %s", port)
+                message_dict = {
+                    "message_type": "new_map_task",
+                    "task_id": task_id,
+                    "input_paths": tasks[task_id],
+                    "executable": job["mapper_executable"],
+                    "output_directory": str(tmpdir),
+                    "num_partitions": job["num_reducers"],
+                    "worker_host": host,
+                    "worker_port": port
+                }
                 if not utils.send_tcp_message(
                         host, port, message_dict):
                     self.worker_die(host, port)
+                    self.dead_task.appendleft(task_id)
                     continue
                 self.workers[host, port]["state"] = 1
                 self.workers[host, port]["task_id"] = task_id
                 self.register_order[0][0] = 1  # ready -> busy
                 heapq.heapify(self.register_order)  # reorder
-            time.sleep(0.2)  # wait for all tasks to be finished
 
     def run_reduce(self, tasks, job, output_dir):
         """Run reduce stage."""
@@ -336,6 +334,8 @@ class Manager:
                 and task_id < len(tasks):
             time.sleep(0.1)
             # allocate tasks to workers
+            if not self.register_order:
+                continue
             if self.register_order[0][0] == 0:
                 LOGGER.info("Current task id %s", task_id)
                 LOGGER.info("Current workers %s", self.register_order)
@@ -364,33 +364,32 @@ class Manager:
         # check job done
         while not self.signals["shutdown"] and \
                 len(self.signals["finished_task"]) != len(tasks):
-            while self.dead_task:
-                # allocate dead tasks to workers
-                if self.register_order[0][0] == 0:
-                    task_id = self.dead_task.popleft()
-                    LOGGER.info("Current dead task id %s", task_id)
-                    LOGGER.info("Current workers %s", self.register_order)
-                    host = self.register_order[0][2]
-                    port = self.register_order[0][3]
-                    LOGGER.info("SEND DEAD TASK TO worker %s", port)
-                    message_dict = {
-                        "message_type": "new_reduce_task",
-                        "task_id": task_id,
-                        "executable": job["reducer_executable"],
-                        "input_paths": tasks[task_id],
-                        "output_directory": str(output_dir),
-                        "worker_host": host,
-                        "worker_port": port
-                    }
+            time.sleep(0.1)  # wait for all tasks to be finished
+            if self.dead_task and self.register_order[0][0] == 0:
+                task_id = self.dead_task.popleft()
+                LOGGER.info("Current dead task id %s", task_id)
+                LOGGER.info("Current workers %s", self.register_order)
+                host = self.register_order[0][2]
+                port = self.register_order[0][3]
+                LOGGER.info("SEND DEAD TASK TO worker %s", port)
+                message_dict = {
+                    "message_type": "new_reduce_task",
+                    "task_id": task_id,
+                    "executable": job["reducer_executable"],
+                    "input_paths": tasks[task_id],
+                    "output_directory": str(output_dir),
+                    "worker_host": host,
+                    "worker_port": port
+                }
                 if not utils.send_tcp_message(
                         host, port, message_dict):
                     self.worker_die(host, port)
+                    self.dead_task.appendleft(task_id)
                     continue
                 self.workers[host, port]["state"] = 1
                 self.workers[host, port]["task_id"] = task_id
                 self.register_order[0][0] = 1  # ready -> busy
                 heapq.heapify(self.register_order)  # reorder
-            time.sleep(0.2)  # wait for all tasks to be finished
 
     def check_heartbeat(self):
         """Check heartbeat and do fault tolerance."""
