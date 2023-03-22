@@ -1,4 +1,5 @@
 """MapReduce framework Worker node."""
+import heapq
 import hashlib
 import os
 import logging
@@ -11,8 +12,10 @@ import tempfile
 import threading
 import time
 from threading import Lock
+from contextlib import ExitStack
 import click
 from mapreduce import utils
+
 
 # Configure logging
 LOGGER = logging.getLogger(__name__)
@@ -25,40 +28,70 @@ def worker_map(executable, input_path, num_partitions,
     with tempfile.TemporaryDirectory(
             prefix=f"mapreduce-local-task{task_id:05d}-") as tmpdir:
         LOGGER.info("Created tmpdir %s", tmpdir)
-        for filename in input_path:
-            with open(filename, encoding="utf-8") as infile:
-                with subprocess.Popen(
-                        [executable],
-                        stdin=infile,
-                        stdout=subprocess.PIPE,
-                        text=True,
-                ) as map_process:
-                    LOGGER.info("Executed %s", executable)
-                    for line in map_process.stdout:
-                        # Add line to correct partition output file
-                        key = line.split("\t")[0]
-                        partition_number = int(hashlib.
-                                               md5(key.encode("utf-8")).
-                                               hexdigest(),
-                                               base=16) % num_partitions
-                        output_file = pathlib.PurePath(
-                            tmpdir, f"maptask{task_id:05d}-part"
-                                    f"{partition_number:05d}")
-                        with open(output_file, 'a', encoding="utf-8") as file:
-                            file.write(line)
-
-                    LOGGER.info("Write to %s", str(output_file))
+        output_files = [pathlib.PurePath(
+                            tmpdir,
+                            f"maptask{task_id:05d}-part"
+                            f"{partition_number:05d}")
+                        for partition_number in range(num_partitions)]
+        with ExitStack() as stack:
+            files = [stack.enter_context(open(filename, 'a', encoding="utf-8"))
+                     for filename in output_files]
+            for filename in input_path:
+                with open(filename, encoding="utf-8") as infile:
+                    with subprocess.Popen(
+                            [executable],
+                            stdin=infile,
+                            stdout=subprocess.PIPE,
+                            text=True,
+                    ) as map_process:
+                        LOGGER.info("Executed %s", executable)
+                        for line in map_process.stdout:
+                            # Add line to correct partition output file
+                            files[(int(hashlib.
+                                       md5(line.split("\t")[0].
+                                           encode("utf-8")).
+                                       hexdigest(),
+                                       base=16) % num_partitions)].write(line)
         # sort lines and
         # move files to managers tmp folder
         for filename in os.listdir(pathlib.Path(tmpdir)):
             with open(pathlib.Path(tmpdir, filename), 'r',
                       encoding="utf-8") as file:
-                lines = sorted(file.readlines())
+                lines = sorted(file)
             with open(pathlib.Path(tmpdir, filename), 'w',
                       encoding="utf-8") as file:
                 for line in lines:
                     file.write(line)
             LOGGER.info("Sorted %s", filename)
+            shutil.move(pathlib.Path(tmpdir, filename),
+                        pathlib.Path(output, filename))
+            LOGGER.info("Moved %s", filename)
+
+
+def worker_reduce(executable, input_path, output, task_id):
+    """Reduce job."""
+    with tempfile.TemporaryDirectory(
+            prefix=f"mapreduce-local-task{task_id:05d}-") as tmpdir:
+        LOGGER.info("Created tmpdir %s", tmpdir)
+        with ExitStack() as stack:
+            files = [stack.enter_context(open(fname, encoding="utf-8"))
+                     for fname in input_path]
+            instream = heapq.merge(*files)
+            filename = pathlib.PurePath(tmpdir, f"part-{task_id:05d}")
+            with open(filename, 'a', encoding="utf-8") as outfile:
+                with subprocess.Popen(
+                    [executable],
+                    text=True,
+                    stdin=subprocess.PIPE,
+                    stdout=outfile,
+                ) as reduce_process:
+                    LOGGER.info("Executed %s", executable)
+                    # Pipe input to reduce_process
+                    for line in instream:
+                        reduce_process.stdin.write(line)
+
+        # move file to output folder
+        for filename in os.listdir(pathlib.Path(tmpdir)):
             shutil.move(pathlib.Path(tmpdir, filename),
                         pathlib.Path(output, filename))
             LOGGER.info("Moved %s", filename)
@@ -103,8 +136,8 @@ class Worker:
             sock.settimeout(1)
 
             while not self.signals["shutdown"]:
-                # print("worker TCP waiting ...")
-
+                # LOGGER.info("worker TCP waiting ...")
+                time.sleep(0.1)
                 with L:
                     if not registered:
                         self.registration()
@@ -116,7 +149,7 @@ class Worker:
                     clientsocket, address = sock.accept()
                 except socket.timeout:
                     continue
-                print("Connection from", address[0])
+                LOGGER.info("Connection from: %s", address[0])
 
                 try:
                     message_dict = utils.recv_tcp_message(clientsocket)
@@ -149,11 +182,29 @@ class Worker:
                                             "task_id": message_dict["task_id"],
                                             "worker_host": self.host,
                                             "worker_port": self.port})
+                elif message_dict.get('message_type', "") == "new_reduce_task":
+                    task_id = message_dict["task_id"]
+                    # do reducing here
+                    reduce_thread = threading.Thread(
+                        target=worker_reduce,
+                        args=(message_dict["executable"],
+                              message_dict["input_paths"],
+                              message_dict["output_directory"],
+                              task_id))
+                    reduce_thread.start()
+
+                    reduce_thread.join()
+                    utils.send_tcp_message(self.manager_host,
+                                           self.manager_port,
+                                           {"message_type": "finished",
+                                            "task_id": message_dict["task_id"],
+                                            "worker_host": self.host,
+                                            "worker_port": self.port})
 
         if udp_running:
             self.udp_thread.join()
 
-        print("worker TCP shutting down")
+        LOGGER.info("worker TCP shutting down")
 
     def registration(self):
         """Send registration message to Manager."""
@@ -189,7 +240,7 @@ class Worker:
                              self.manager_host, self.manager_port, )
                 time.sleep(2)
 
-        print("worker UDP shutting down")
+        LOGGER.info("worker UDP shutting down")
 
 
 @click.command()

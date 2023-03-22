@@ -9,9 +9,13 @@ import socket
 def send_tcp_message(host, port, message_dict):
     """Send customized tcp message."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.connect((host, port))
+        try:
+            sock.connect((host, port))
+        except ConnectionRefusedError:
+            return False
         message = json.dumps(message_dict)
         sock.sendall(message.encode('utf-8'))
+        return True
 
 
 def recv_tcp_message(clientsocket):
