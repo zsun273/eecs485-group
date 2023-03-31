@@ -11,7 +11,16 @@ with open("stopwords.txt", "r", encoding="utf-8") as stopwords:
         stops.add(line.strip())
 
 for line in sys.stdin:
-    doc_id, title, body = line.split('",')
+    csv_array = []
+    for row in csv.reader(line.strip()):
+        content = re.sub(r"[^a-zA-Z0-9 ]+", "", row[0])
+        content = content.strip()
+        if not content or len(content) == 0:
+            continue
+        csv_array.append(content)
+    doc_id = csv_array[0]
+    title = csv_array[1]
+    body = csv_array[2]
     # combine title and body
     text = title + " " + body
     # remove non-alphanumeric
