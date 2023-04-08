@@ -1,7 +1,8 @@
 """Index server package initializer."""
-import flask
 import os
 from pathlib import Path
+import flask
+
 
 # app is a single object used by all the code modules in this package
 # pylint: disable=invalid-name
