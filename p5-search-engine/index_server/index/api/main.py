@@ -18,6 +18,7 @@ with open(index.app.config["PATH"] + '/inverted_index/' +
                                                         float(norm)]
 
 # stopwords = set(stopword)
+stopwords = set()
 with open(index.app.config["PATH"] + '/stopwords.txt',
           'r', encoding="utf-8") as file_sw:
     stopwords = set(stopword.strip() for stopword in file_sw)
