@@ -58,10 +58,10 @@ def get_hits(query, weight):
     """Return a list of hits given query and weight."""
     # Query processing
     word_count = {}
-    query = re.sub(r"[^a-zA-Z0-9 ]+", "", query)
     query = query.casefold()
     query = list(query.split(' '))
     for word in query:
+        word = re.sub(r"[^a-zA-Z0-9 ]+", "", word)
         if word in stopwords:
             continue
         if word not in word_count:
